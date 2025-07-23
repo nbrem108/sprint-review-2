@@ -1,0 +1,418 @@
+"use client"
+
+import type React from "react"
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from "react"
+
+interface Project {
+  id: string
+  key: string
+  name: string
+  boards?: Board[]
+  boardId?: string // kept for backward-compat single-board case
+}
+
+// New board type
+interface Board {
+  id: string
+  name: string
+  type: string // scrum | kanban | simple
+}
+
+interface Sprint {
+  id: string
+  name: string
+  state: "active" | "closed" | "future"
+  startDate?: string
+  endDate?: string
+  boardId: string
+}
+
+interface Issue {
+  id: string
+  key: string
+  summary: string
+  status: string
+  assignee?: string
+  storyPoints?: number
+  issueType: string
+  isSubtask: boolean
+}
+
+interface SprintMetrics {
+  plannedItems: number
+  estimatedPoints: number
+  carryForwardPoints: number
+  committedBufferPoints: number
+  completedBufferPoints: number
+  testCoverage: number
+  sprintNumber: string
+  completedTotalPoints: number
+  completedAdjustedPoints: number
+  qualityChecklist: {
+    sprintCommitment: "yes" | "no" | "partial"
+    velocity: "yes" | "no" | "partial"
+    testCoverage: "yes" | "no" | "partial"
+    testAutomation: "yes" | "no" | "partial"
+    uiUxStandards: "yes" | "no" | "partial"
+    internationalFirst: "yes" | "no" | "partial"
+    mobileResponsive: "yes" | "no" | "partial"
+    featurePermissions: "yes" | "no" | "partial"
+    releaseNotes: "yes" | "no" | "partial"
+    howToVideos: "yes" | "no" | "na"
+  }
+}
+
+interface CorporateSlide {
+  id: string
+  filename: string
+  blobUrl: string
+  localUrl: string
+  title: string
+  position: "intro" | "section-break" | "outro" | "custom"
+  order: number
+  isActive: boolean
+  uploadedAt: string
+}
+
+interface SprintState {
+  selectedProject: Project | null
+  selectedBoard: Board | null
+  selectedSprint: Sprint | null
+  upcomingSprint: Sprint | null
+  issues: Issue[]
+  upcomingIssues: Issue[]
+  demoStories: string[]
+  metrics: SprintMetrics | null
+  summaries: {
+    currentSprint?: string
+    upcomingSprint?: string
+    demoStories?: Record<string, string>
+  }
+  additionalSlides: File[]
+  corporateSlides: CorporateSlide[]
+  loading: {
+    projects: boolean
+    sprints: boolean
+    issues: boolean
+    summaries: boolean
+  }
+  currentTab: "setup" | "demo-stories" | "metrics" | "other-slides" | "corporate-slides" | "summaries" | "presentation"
+  sessionId: string
+  lastSaved: string | null
+}
+
+type SprintAction =
+  | { type: "SET_PROJECT"; payload: Project }
+  | { type: "SET_BOARD"; payload: Board }
+  | { type: "SET_SPRINT"; payload: Sprint }
+  | { type: "SET_UPCOMING_SPRINT"; payload: Sprint | null }
+  | { type: "SET_ISSUES"; payload: Issue[] }
+  | { type: "SET_UPCOMING_ISSUES"; payload: Issue[] }
+  | { type: "TOGGLE_DEMO_STORY"; payload: string }
+  | { type: "SET_METRICS"; payload: SprintMetrics }
+  | { type: "SET_SUMMARIES"; payload: SprintState["summaries"] }
+  | { type: "ADD_SLIDE"; payload: File }
+  | { type: "REMOVE_SLIDE"; payload: number }
+  | { type: "SET_CORPORATE_SLIDES"; payload: CorporateSlide[] }
+  | { type: "SET_LOADING"; payload: { key: keyof SprintState["loading"]; value: boolean } }
+  | { type: "SET_TAB"; payload: SprintState["currentTab"] }
+  | { type: "RESET_SPRINT_DATA" }
+  | { type: "LOAD_FROM_STORAGE"; payload: Partial<SprintState> }
+  | { type: "CLEAR_SESSION" }
+
+// persistence helpers
+const STORAGE_KEY = "sprint-review-session"
+const SESSION_TIMEOUT = 24 * 60 * 60 * 1000 // 24h
+const generateSessionId = () => `session-${Date.now()}-${Math.random().toString(36).slice(2,9)}`
+
+// Utility function to ensure corporate slides are unique by ID
+const deduplicateCorporateSlides = (slides: CorporateSlide[]): CorporateSlide[] => {
+  const seen = new Set<string>()
+  return slides.filter(slide => {
+    if (seen.has(slide.id)) {
+      return false
+    }
+    seen.add(slide.id)
+    return true
+  })
+}
+
+const serializeStateForStorage = (state: SprintState) => ({
+  selectedProject: state.selectedProject,
+  selectedBoard: state.selectedBoard,
+  selectedSprint: state.selectedSprint,
+  upcomingSprint: state.upcomingSprint,
+  issues: state.issues,
+  upcomingIssues: state.upcomingIssues,
+  demoStories: state.demoStories,
+  metrics: state.metrics,
+  summaries: state.summaries,
+  corporateSlides: state.corporateSlides,
+  currentTab: state.currentTab,
+  sessionId: state.sessionId,
+  lastSaved: new Date().toISOString(),
+})
+
+const loadStateFromStorage = (): Partial<SprintState> | null => {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed.lastSaved && Date.now() - new Date(parsed.lastSaved).getTime() > SESSION_TIMEOUT) {
+      window.localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return parsed
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY)
+    return null
+  }
+}
+
+const saveStateToStorage = (state: SprintState) => {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(state)))
+  } catch {}
+}
+
+const initialState: SprintState = {
+  selectedProject: null,
+  selectedBoard: null,
+  selectedSprint: null,
+  upcomingSprint: null,
+  issues: [],
+  upcomingIssues: [],
+  demoStories: [],
+  metrics: null,
+  summaries: {},
+  additionalSlides: [],
+  corporateSlides: [
+    {
+      id: "default-intro",
+      filename: "intro.png",
+      blobUrl: "",
+      localUrl: "/corporate-slides/intro.png",
+      title: "Introduction",
+      position: "intro",
+      order: 0,
+      isActive: true,
+      uploadedAt: new Date().toISOString(),
+    },
+    {
+      id: "default-guidelines",
+      filename: "guidelines.png",
+      blobUrl: "",
+      localUrl: "/corporate-slides/guidelines.png",
+      title: "Guidelines",
+      position: "intro",
+      order: 1,
+      isActive: true,
+      uploadedAt: new Date().toISOString(),
+    },
+    {
+      id: "default-demo-separator",
+      filename: "demo_separator.png",
+      blobUrl: "",
+      localUrl: "/corporate-slides/demo_separator.png",
+      title: "Demo Separator",
+      position: "section-break",
+      order: 2,
+      isActive: true,
+      uploadedAt: new Date().toISOString(),
+    },
+    {
+      id: "default-blank-template",
+      filename: "blank_template.png",
+      blobUrl: "",
+      localUrl: "/corporate-slides/blank_template.png",
+      title: "Blank Template",
+      position: "custom",
+      order: 3,
+      isActive: true,
+      uploadedAt: new Date().toISOString(),
+    },
+  ],
+  loading: {
+    projects: false,
+    sprints: false,
+    issues: false,
+    summaries: false,
+  },
+  currentTab: "setup",
+  sessionId: generateSessionId(),
+  lastSaved: null,
+}
+
+function sprintReducer(state: SprintState, action: SprintAction): SprintState {
+  let newState: SprintState
+
+  switch (action.type) {
+    case "SET_PROJECT":
+      newState = {
+        ...state,
+        selectedProject: action.payload,
+        selectedSprint: null,
+        upcomingSprint: null,
+        issues: [],
+        upcomingIssues: [],
+        demoStories: [],
+        metrics: null,
+        summaries: {},
+      }
+      break
+    case "SET_BOARD":
+      newState = {
+        ...state,
+        selectedBoard: action.payload,
+        selectedSprint: null,
+        upcomingSprint: null,
+        issues: [],
+        upcomingIssues: [],
+        demoStories: [],
+        metrics: null,
+        summaries: {},
+      }
+      break
+    case "SET_SPRINT":
+      newState = {
+        ...state,
+        selectedSprint: action.payload,
+        issues: [],
+        demoStories: [],
+        summaries: {},
+      }
+      break
+    case "SET_UPCOMING_SPRINT":
+      newState = {
+        ...state,
+        upcomingSprint: action.payload,
+        upcomingIssues: [],
+      }
+      break
+    case "SET_ISSUES":
+      newState = { ...state, issues: action.payload }
+      break
+    case "SET_UPCOMING_ISSUES":
+      newState = { ...state, upcomingIssues: action.payload }
+      break
+    case "TOGGLE_DEMO_STORY":
+      newState = {
+        ...state,
+        demoStories: state.demoStories.includes(action.payload)
+          ? state.demoStories.filter((id) => id !== action.payload)
+          : [...state.demoStories, action.payload],
+      }
+      break
+    case "SET_METRICS":
+      newState = { ...state, metrics: action.payload }
+      break
+    case "SET_SUMMARIES":
+      newState = { ...state, summaries: { ...state.summaries, ...action.payload } }
+      break
+    case "ADD_SLIDE":
+      newState = { ...state, additionalSlides: [...state.additionalSlides, action.payload] }
+      break
+    case "REMOVE_SLIDE":
+      newState = {
+        ...state,
+        additionalSlides: state.additionalSlides.filter((_, index) => index !== action.payload),
+      }
+      break
+    case "SET_CORPORATE_SLIDES":
+      newState = { ...state, corporateSlides: deduplicateCorporateSlides(action.payload) }
+      break
+    case "RESET_SPRINT_DATA":
+      newState = {
+        ...state,
+        selectedSprint: null,
+        upcomingSprint: null,
+        issues: [],
+        upcomingIssues: [],
+        demoStories: [],
+        metrics: null,
+        summaries: {},
+        additionalSlides: [],
+      }
+      break
+    case "SET_LOADING":
+      newState = { ...state, loading: { ...state.loading, [action.payload.key]: action.payload.value } }
+      break
+    case "SET_TAB":
+      newState = { ...state, currentTab: action.payload }
+      break
+    case "LOAD_FROM_STORAGE":
+      // Ensure corporate slides don't get duplicated by merging properly
+      const storedCorporateSlides = action.payload.corporateSlides || []
+      const mergedCorporateSlides = storedCorporateSlides.length > 0 
+        ? deduplicateCorporateSlides(storedCorporateSlides)
+        : state.corporateSlides
+      
+      newState = { 
+        ...state, 
+        ...action.payload,
+        corporateSlides: mergedCorporateSlides
+      }
+      break
+    case "CLEAR_SESSION":
+      if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY)
+      newState = { ...initialState, sessionId: generateSessionId() }
+      break
+    default:
+      return state
+  }
+
+  // auto-save except during load
+  if (typeof window !== "undefined" && action.type !== "LOAD_FROM_STORAGE" && action.type !== "SET_LOADING") {
+    setTimeout(() => saveStateToStorage(newState!), 0)
+  }
+
+  return newState!
+}
+
+interface SprintContextValue {
+  state: SprintState
+  dispatch: React.Dispatch<SprintAction>
+  clearSession: () => void
+  exportSession: () => string
+  importSession: (data: string) => boolean
+}
+
+const SprintContext = createContext<SprintContextValue | null>(null)
+
+export function SprintProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(sprintReducer, initialState)
+
+  useEffect(() => {
+    const stored = loadStateFromStorage()
+    if (stored) dispatch({ type: "LOAD_FROM_STORAGE", payload: stored })
+  }, [])
+
+  const clearSession = () => dispatch({ type: "CLEAR_SESSION" })
+
+  const exportSession = () => JSON.stringify(serializeStateForStorage(state), null, 2)
+
+  const importSession = (data: string) => {
+    try {
+      dispatch({ type: "LOAD_FROM_STORAGE", payload: JSON.parse(data) })
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  return (
+    <SprintContext.Provider value={{ state, dispatch, clearSession, exportSession, importSession }}>
+      {children}
+    </SprintContext.Provider>
+  )
+}
+
+export function useSprintContext() {
+  const context = useContext(SprintContext)
+  if (!context) {
+    throw new Error("useSprintContext must be used within a SprintProvider")
+  }
+  return context
+}

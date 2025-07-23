@@ -1,0 +1,436 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { SlideRenderer } from "./slide-renderer"
+import { PresentationControls } from "./presentation-controls"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, Minimize, X } from "lucide-react"
+
+interface PresentationSlide {
+  id: string
+  title: string
+  content: string
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate"
+  order: number
+  corporateSlideUrl?: string
+}
+
+interface Issue {
+  id: string
+  key: string
+  summary: string
+  status: string
+  assignee?: string
+  storyPoints?: number
+  issueType: string
+  isSubtask: boolean
+}
+
+interface SprintMetrics {
+  plannedItems: number
+  estimatedPoints: number
+  carryForwardPoints: number
+  committedBufferPoints: number
+  completedBufferPoints: number
+  testCoverage: number
+  sprintNumber: string
+  completedTotalPoints: number
+  completedAdjustedPoints: number
+  qualityChecklist: Record<string, "yes" | "no" | "partial" | "na">
+}
+
+interface CorporateSlide {
+  id: string
+  filename: string
+  localUrl: string
+  title: string
+  position: "intro" | "section-break" | "outro" | "custom"
+  order: number
+  isActive: boolean
+}
+
+interface PresentationModeProps {
+  slides: PresentationSlide[]
+  allIssues: Issue[]
+  upcomingIssues: Issue[]
+  sprintMetrics?: SprintMetrics | null
+  corporateSlides?: CorporateSlide[]
+  onClose: () => void
+}
+
+export function PresentationMode({ 
+  slides, 
+  allIssues, 
+  upcomingIssues, 
+  sprintMetrics, 
+  corporateSlides = [],
+  onClose 
+}: PresentationModeProps) {
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isExportingMarkdown, setIsExportingMarkdown] = useState(false)
+
+  // Function to get all slides in order
+  const getAllSlides = useCallback(() => {
+    const introSlides = corporateSlides
+      .filter(s => s.position === "intro" && s.isActive)
+      .sort((a, b) => a.order - b.order)
+      .map(s => ({
+        id: `corporate-${s.id}`,
+        title: s.title,
+        content: "",
+        type: "corporate" as const,
+        order: -1000 + s.order, // Ensure intro slides come first
+        corporateSlideUrl: s.localUrl
+      }));
+
+    const mainSlides = slides.map(s => ({
+      ...s,
+      order: s.order * 10 // Give space for section breaks
+    }));
+
+    // Insert section break slides before demo stories
+    const demoSeparators = corporateSlides
+      .filter(s => s.position === "section-break" && s.isActive)
+      .sort((a, b) => a.order - b.order) // Sort by their original order
+      .map((s, index) => ({
+        id: `corporate-${s.id}`,
+        title: s.title,
+        content: "",
+        type: "corporate" as const,
+        order: ((mainSlides.find(ms => ms.type === "demo-story")?.order ?? 1000) - 5) + index, // Ensure unique order for each separator
+        corporateSlideUrl: s.localUrl
+      }));
+
+    const outroSlides = corporateSlides
+      .filter(s => s.position === "outro" && s.isActive)
+      .sort((a, b) => a.order - b.order)
+      .map(s => ({
+        id: `corporate-${s.id}`,
+        title: s.title,
+        content: "",
+        type: "corporate" as const,
+        order: 2000 + s.order, // Ensure outro slides come last
+        corporateSlideUrl: s.localUrl
+      }));
+
+    return [...introSlides, ...mainSlides, ...demoSeparators, ...outroSlides]
+      .sort((a, b) => a.order - b.order);
+  }, [slides, corporateSlides]);
+
+  // Use the combined slides
+  const allSlides = getAllSlides();
+
+  // Update slide navigation to use allSlides
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev < allSlides.length - 1 ? prev + 1 : prev))
+  }, [allSlides.length])
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev > 0 ? prev - 1 : prev))
+  }, [])
+
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index)
+  }, [])
+
+  // Fullscreen functions
+  const enterFullscreen = async () => {
+    try {
+      const slideContainer = document.getElementById("slide-container")
+      if (slideContainer?.requestFullscreen) {
+        await slideContainer.requestFullscreen()
+      }
+    } catch (error) {
+      console.error("Error entering fullscreen:", error)
+    }
+  }
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen()
+      }
+    } catch (error) {
+      console.error("Error exiting fullscreen:", error)
+    }
+  }
+
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      await exitFullscreen()
+    } else {
+      await enterFullscreen()
+    }
+  }
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (isPlaying) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => {
+          if (prev < allSlides.length - 1) {
+            return prev + 1
+          } else {
+            setIsPlaying(false)
+            return prev
+          }
+        })
+      }, 5000) // 5 seconds per slide
+
+      return () => clearInterval(interval)
+    }
+  }, [isPlaying, allSlides.length])
+
+  // Keyboard navigation
+  const handleKeyPress = useCallback(
+    (e: KeyboardEvent) => {
+      if (showShortcuts) return
+
+      switch (e.key) {
+        case "ArrowRight":
+        case " ":
+          e.preventDefault()
+          nextSlide()
+          break
+        case "ArrowLeft":
+          e.preventDefault()
+          prevSlide()
+          break
+        case "Escape":
+          if (isFullscreen) {
+            exitFullscreen()
+          } else {
+            onClose()
+          }
+          break
+        case "f":
+        case "F11":
+          e.preventDefault()
+          toggleFullscreen()
+          break
+        case "?":
+          setShowShortcuts(true)
+          break
+        case "p":
+          setIsPlaying(!isPlaying)
+          break
+      }
+    },
+    [nextSlide, prevSlide, isFullscreen, showShortcuts, isPlaying, onClose],
+  )
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyPress)
+    return () => window.removeEventListener("keydown", handleKeyPress)
+  }, [handleKeyPress])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+  }, [])
+
+  // Export functions
+  const exportHTML = async () => {
+    setIsExporting(true)
+    try {
+      // Simulate HTML export
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      console.log("Exporting HTML...")
+    } catch (error) {
+      console.error("Export error:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportMarkdown = async () => {
+    setIsExportingMarkdown(true)
+    try {
+      // Simulate Markdown export
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      console.log("Exporting Markdown...")
+    } catch (error) {
+      console.error("Export error:", error)
+    } finally {
+      setIsExportingMarkdown(false)
+    }
+  }
+
+  const exportPDF = async () => {
+    console.log("Exporting PDF...")
+  }
+
+  if (allSlides.length === 0) {
+    return (
+      <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg border">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Presentation Data</h3>
+          <p className="text-gray-600">Generate slides first to view presentation.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Header Controls (only visible when not in fullscreen) */}
+      {!isFullscreen && (
+        <div className="bg-white border-b">
+          <PresentationControls
+            currentSlide={currentSlide}
+            totalSlides={allSlides.length}
+            isPlaying={isPlaying}
+            isFullscreen={isFullscreen}
+            isExporting={isExporting}
+            isExportingMarkdown={isExportingMarkdown}
+            onPrevSlide={prevSlide}
+            onNextSlide={nextSlide}
+            onTogglePlay={() => setIsPlaying(!isPlaying)}
+            onToggleFullscreen={toggleFullscreen}
+            onExportHTML={exportHTML}
+            onExportMarkdown={exportMarkdown}
+            onExportPDF={exportPDF}
+            onShowShortcuts={() => setShowShortcuts(true)}
+            onGoToSlide={goToSlide}
+          />
+        </div>
+      )}
+
+      {/* Close button (top-left when not fullscreen) */}
+      {!isFullscreen && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="absolute top-4 left-4 z-10 bg-white/90 hover:bg-white"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Exit Presentation
+        </Button>
+      )}
+
+      {/* Slide Content */}
+      <div id="slide-container" className="flex-1 bg-white relative overflow-hidden">
+        <SlideRenderer
+          slide={allSlides[currentSlide]}
+          allIssues={allIssues}
+          upcomingIssues={upcomingIssues}
+          sprintMetrics={sprintMetrics}
+          isFullscreen={isFullscreen}
+        />
+
+        {/* Fullscreen controls overlay */}
+        {isFullscreen && (
+          <div className="absolute top-4 right-4 flex items-center space-x-2 bg-black/70 rounded-lg p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={prevSlide}
+              disabled={currentSlide === 0}
+              className="text-white hover:bg-white/20"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={nextSlide}
+              disabled={currentSlide === allSlides.length - 1}
+              className="text-white hover:bg-white/20"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+            <div className="text-white text-sm px-2">
+              {currentSlide + 1} of {allSlides.length}
+            </div>
+            <Button variant="ghost" size="sm" onClick={exitFullscreen} className="text-white hover:bg-white/20">
+              <Minimize className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Auto-play indicator */}
+        {isPlaying && (
+          <div className="absolute bottom-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm flex items-center space-x-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <span>Auto-playing</span>
+          </div>
+        )}
+      </div>
+
+      {/* Slide Thumbnails (bottom, hidden in fullscreen) */}
+      {!isFullscreen && (
+        <div className="bg-gray-100 border-t p-4">
+          <div className="flex space-x-2 overflow-x-auto">
+            {allSlides.map((slide, index) => (
+              <button
+                key={slide.id}
+                onClick={() => goToSlide(index)}
+                className={`flex-shrink-0 w-24 h-16 rounded border-2 transition-all ${
+                  index === currentSlide
+                    ? "border-blue-600 bg-blue-50 shadow-md"
+                    : "border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm"
+                }`}
+              >
+                <div className="w-full h-full flex flex-col items-center justify-center text-xs">
+                  <div className="font-medium text-gray-700">{index + 1}</div>
+                  <div className="text-gray-500 truncate w-full px-1">
+                    {slide.title.length > 12 ? `${slide.title.substring(0, 12)}...` : slide.title}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcuts && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Keyboard Shortcuts</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowShortcuts(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span>Next slide</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">→ or Space</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Previous slide</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">←</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Toggle fullscreen</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">F or F11</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Toggle auto-play</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">P</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Exit presentation</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Esc</kbd>
+              </div>
+              <div className="flex justify-between">
+                <span>Show this help</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">?</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
