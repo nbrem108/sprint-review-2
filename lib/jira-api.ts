@@ -360,11 +360,14 @@ export async function fetchJiraSprintIssues(sprintId: number): Promise<SafeJiraI
           maxResults: 1000,
           fields: [
             "summary",
+            "description",
             "status",
             "assignee",
             "issuetype",
             "parent",
-            "customfield_10016", // Story Points
+            "customfield_10127", // Story Points
+            "customfield_10011", // Epic or Parent Name
+            "customfield_10000", // Release Notes
           ],
         }),
       },
@@ -381,12 +384,17 @@ export async function fetchJiraSprintIssues(sprintId: number): Promise<SafeJiraI
         id: safeIssue.id,
         key: safeIssue.key,
         summary: safeIssue.summary,
+        description: safeIssue.description,
         status: safeIssue.status,
         assignee: safeIssue.assignee,
         storyPoints: safeIssue.storyPoints,
         issueType: safeIssue.issueType,
         isSubtask: safeIssue.isSubtask,
         parentKey: safeIssue.parentKey,
+        epicKey: safeIssue.epicKey,
+        epicName: safeIssue.epicName,
+        epicColor: safeIssue.epicColor,
+        releaseNotes: safeIssue.releaseNotes,
       }
     })
 
@@ -421,11 +429,14 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
           maxResults: 1000,
           fields: [
             "summary",
+            "description",
             "status",
             "assignee",
             "issuetype",
             "parent",
-            "customfield_10016", // Story Points
+            "customfield_10127", // Story Points
+            "customfield_10011", // Epic or Parent Name
+            "customfield_10000", // Release Notes
           ],
         }),
       },
@@ -442,12 +453,17 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
         id: safeIssue.id,
         key: safeIssue.key,
         summary: safeIssue.summary,
+        description: safeIssue.description,
         status: safeIssue.status,
         assignee: safeIssue.assignee,
         storyPoints: safeIssue.storyPoints,
         issueType: safeIssue.issueType,
         isSubtask: safeIssue.isSubtask,
         parentKey: safeIssue.parentKey,
+        epicKey: safeIssue.epicKey,
+        epicName: safeIssue.epicName,
+        epicColor: safeIssue.epicColor,
+        releaseNotes: safeIssue.releaseNotes,
       }
     })
 

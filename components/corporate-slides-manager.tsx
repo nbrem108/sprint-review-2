@@ -400,16 +400,17 @@ export function CorporateSlidesManager({ slides, onSlidesUpdate }: CorporateSlid
               )}
 
               <div className="text-muted-foreground">→ Sprint Overview</div>
+              <div className="text-muted-foreground">→ Sprint Metrics</div>
+              <div className="text-muted-foreground">→ Demo Stories</div>
 
               {slides.filter((s) => s.isActive && s.position === "section-break").length > 0 && (
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-purple-100 text-purple-800">Section Break</Badge>
+                  <Badge className="bg-purple-100 text-purple-800">Demo Separator</Badge>
                   <span>{slides.filter((s) => s.isActive && s.position === "section-break").length} slides</span>
                 </div>
               )}
 
-              <div className="text-muted-foreground">→ Sprint Metrics</div>
-              <div className="text-muted-foreground">→ Demo Stories</div>
+              <div className="text-muted-foreground">→ Upcoming Sprint</div>
 
               {slides.filter((s) => s.isActive && s.position === "outro").length > 0 && (
                 <div className="flex items-center gap-2">

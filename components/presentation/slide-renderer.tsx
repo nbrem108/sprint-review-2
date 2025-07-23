@@ -24,6 +24,7 @@ interface Issue {
   id: string
   key: string
   summary: string
+  description?: string
   status: string
   assignee?: string
   storyPoints?: number
@@ -32,6 +33,7 @@ interface Issue {
   epicKey?: string
   epicName?: string
   epicColor?: string
+  releaseNotes?: string
 }
 
 interface EpicGroup {
@@ -82,19 +84,19 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
   // Standard mode: 960x540px (scaled down for better UX)
   // Fullscreen mode: full screen with maintained aspect ratio
   
-  // Container sizing based on mode
+  // Container sizing based on mode - More compact for screensharing
   const containerClass = isFullscreen
-    ? "w-full h-full p-3 sm:p-6 lg:p-8 xl:p-12 flex flex-col justify-center min-h-0"
+    ? "w-full h-full p-2 sm:p-3 lg:p-4 flex flex-col justify-center min-h-0 max-w-6xl mx-auto"
     : "slide-container mx-auto my-2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center min-h-0 shadow-lg border border-gray-200 rounded-lg bg-white"
 
-  // Typography scaling based on mode
+  // Typography scaling based on mode - More compact for screensharing
   const titleClass = isFullscreen 
-    ? "text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 xl:mb-8 text-center leading-tight" 
+    ? "text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3 lg:mb-4 text-center leading-tight" 
     : "text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3 lg:mb-4 text-center leading-tight"
 
-  // Content scaling based on mode
+  // Content scaling based on mode - More compact for screensharing
   const contentClass = isFullscreen 
-    ? "text-sm sm:text-base lg:text-lg xl:text-2xl leading-relaxed" 
+    ? "text-sm sm:text-base lg:text-lg leading-relaxed" 
     : "text-xs sm:text-sm lg:text-base leading-relaxed"
 
   // Responsive behavior testing
@@ -472,27 +474,27 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     <div className={`${containerClass} relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden`}>
       
       {/* Content Container - Adjusted for PowerPoint-like sizing */}
-      <div className="relative z-10 flex flex-col h-full p-4 sm:p-6 lg:p-8">
+      <div className={`relative z-10 flex flex-col h-full ${isFullscreen ? 'p-2 sm:p-3' : 'p-4 sm:p-6 lg:p-8'}`}>
         {/* Header */}
-        <div className="mb-3 sm:mb-4 flex-shrink-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
+        <div className={`${isFullscreen ? 'mb-2' : 'mb-3 sm:mb-4'} flex-shrink-0`}>
+          <h1 className={`${isFullscreen ? 'text-base sm:text-lg' : 'text-lg sm:text-xl lg:text-2xl'} font-bold text-white mb-2`}>
             Demo Story
           </h1>
           <div className="h-1 w-16 sm:w-20 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"></div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 ${isFullscreen ? 'gap-2 sm:gap-3' : 'gap-4 sm:gap-6 lg:gap-8'}`}>
           {/* Left Column - Issue Details & Accomplishments */}
-          <div className="flex flex-col space-y-4 sm:space-y-5">
+          <div className={`flex flex-col ${isFullscreen ? 'space-y-2 sm:space-y-3' : 'space-y-4 sm:space-y-5'}`}>
             {/* Issue Details Card - Compact */}
             {issueDetails && (
-              <div className="bg-black/50 backdrop-blur-lg rounded-xl p-3 sm:p-4 border border-white/40 flex-shrink-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center">
+              <div className={`bg-black/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-white/40 flex-shrink-0`}>
+                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
                   <User className="w-4 h-4 mr-2 text-blue-400" />
                   Issue Details
                 </h3>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className={`grid grid-cols-2 ${isFullscreen ? 'gap-1 sm:gap-2' : 'gap-2 sm:gap-3'} ${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'}`}>
                   <div>
                     <span className="text-gray-300 text-xs">Assignee:</span>
                     <p className="text-white font-medium slide-content slide-overflow">{issueDetails.assignee}</p>
@@ -523,20 +525,20 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
 
             {/* Accomplishments - Organized Content */}
             {accomplishments.hasContent && (
-              <div className="bg-gradient-to-br from-blue-600/50 to-cyan-600/50 backdrop-blur-lg rounded-xl p-3 sm:p-4 border border-blue-500/60 flex-1 min-h-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center">
+              <div className={`bg-gradient-to-br from-blue-600/50 to-cyan-600/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-blue-500/60 flex-1 min-h-0`}>
+                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
                   <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
                   Accomplishments
                 </h3>
                 <div className="h-full overflow-y-auto">
                   {accomplishments.sections.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className={`${isFullscreen ? 'space-y-2' : 'space-y-3'}`}>
                       {accomplishments.sections.slice(0, 4).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-2 sm:p-3">
-                          <h4 className="text-xs sm:text-sm font-semibold text-blue-200 mb-1">
+                        <div key={index} className={`bg-white/10 rounded-lg ${isFullscreen ? 'p-1 sm:p-2' : 'p-2 sm:p-3'}`}>
+                          <h4 className={`${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'} font-semibold text-blue-200 ${isFullscreen ? 'mb-1' : 'mb-1'}`}>
                             {section.title}
                           </h4>
-                          <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                          <div className={`${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'} text-white leading-relaxed slide-content slide-overflow`}>
                             <div 
                               dangerouslySetInnerHTML={{ 
                                 __html: marked(section.content.slice(0, 200) + (section.content.length > 200 ? '...' : '')) 
@@ -561,11 +563,11 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
           </div>
 
           {/* Right Column - Business Value & User Impact */}
-          <div className="flex flex-col space-y-4 sm:space-y-5">
+          <div className={`flex flex-col ${isFullscreen ? 'space-y-2 sm:space-y-3' : 'space-y-4 sm:space-y-5'}`}>
             {/* Business Value */}
             {businessValue.hasContent && (
-              <div className="bg-gradient-to-br from-emerald-600/50 to-teal-600/50 backdrop-blur-lg rounded-xl p-3 sm:p-4 border border-emerald-500/60 flex-1 min-h-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center">
+              <div className={`bg-gradient-to-br from-emerald-600/50 to-teal-600/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-emerald-500/60 flex-1 min-h-0`}>
+                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
                   <TrendingUp className="w-4 h-4 mr-2 text-emerald-400" />
                   Business Value
                 </h3>

@@ -23,6 +23,7 @@ export interface JiraIssue {
   key: string
   fields: {
     summary: string
+    description?: string
     status: {
       name: string
       statusCategory?: {
@@ -38,7 +39,10 @@ export interface JiraIssue {
       name: string
       iconUrl?: string
     }
-    customfield_10016?: number // Story Points
+    customfield_10127?: number // Story Points
+    customfield_10011?: string // Epic or Parent Name
+    // Release notes field - this might vary by Jira instance
+    customfield_10000?: string // Common field for release notes
     parent?: {
       key: string
       fields: {
@@ -87,12 +91,17 @@ export interface SafeJiraIssue {
   id: string
   key: string
   summary: string
+  description?: string
   status: string
   assignee?: string
   storyPoints?: number
   issueType: string
   isSubtask: boolean
   parentKey?: string
+  epicKey?: string
+  epicName?: string
+  epicColor?: string
+  releaseNotes?: string
 }
 
 export interface SafeJiraUser {
@@ -173,12 +182,19 @@ export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
     id: issue.id,
     key: issue.key,
     summary: issue.fields.summary,
+    description: issue.fields.description,
     status: issue.fields.status.name,
     assignee: issue.fields.assignee?.displayName,
-    storyPoints: issue.fields.customfield_10016,
+    storyPoints: issue.fields.customfield_10127,
     issueType: issue.fields.issuetype.name,
     isSubtask: !!issue.fields.parent,
     parentKey: issue.fields.parent?.key,
+    epicKey: undefined, // We'll use epicName instead
+    epicName: issue.fields.customfield_10011 || 
+      (issue.fields.parent && typeof issue.fields.parent === 'object' && 'fields' in issue.fields.parent && issue.fields.parent.fields && typeof issue.fields.parent.fields === 'object' && 'summary' in issue.fields.parent.fields && issue.fields.parent.fields.summary) ||
+      undefined,
+    epicColor: undefined, // Not available in this field structure
+    releaseNotes: issue.fields.customfield_10000, // Common release notes field
   }
 }
 

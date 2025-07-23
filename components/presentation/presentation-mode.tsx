@@ -19,11 +19,16 @@ interface Issue {
   id: string
   key: string
   summary: string
+  description?: string
   status: string
   assignee?: string
   storyPoints?: number
   issueType: string
   isSubtask: boolean
+  epicKey?: string
+  epicName?: string
+  epicColor?: string
+  releaseNotes?: string
 }
 
 interface SprintMetrics {
@@ -75,49 +80,9 @@ export function PresentationMode({
 
   // Function to get all slides in order
   const getAllSlides = useCallback(() => {
-    const introSlides = corporateSlides
-      .filter(s => (s.position === "intro" || s.position === "meeting-guidelines") && s.isActive)
-      .sort((a, b) => a.order - b.order)
-      .map(s => ({
-        id: `corporate-${s.id}`,
-        title: s.title,
-        content: "",
-        type: "corporate" as const,
-        order: -1000 + s.order, // Ensure intro slides come first
-        corporateSlideUrl: s.localUrl
-      }));
-
-    const mainSlides = slides.map(s => ({
-      ...s,
-      order: s.order * 10 // Give space for section breaks
-    }));
-
-    // Insert section break slides before demo stories
-    const demoSeparators = corporateSlides
-      .filter(s => s.position === "section-break" && s.isActive)
-      .sort((a, b) => a.order - b.order) // Sort by their original order
-      .map((s, index) => ({
-        id: `corporate-${s.id}`,
-        title: s.title,
-        content: "",
-        type: "corporate" as const,
-        order: ((mainSlides.find(ms => ms.type === "demo-story")?.order ?? 1000) - 5) + index, // Ensure unique order for each separator
-        corporateSlideUrl: s.localUrl
-      }));
-
-    const outroSlides = corporateSlides
-      .filter(s => s.position === "outro" && s.isActive)
-      .sort((a, b) => a.order - b.order)
-      .map(s => ({
-        id: `corporate-${s.id}`,
-        title: s.title,
-        content: "",
-        type: "corporate" as const,
-        order: 2000 + s.order, // Ensure outro slides come last
-        corporateSlideUrl: s.localUrl
-      }));
-
-    const allSlidesArray = [...introSlides, ...mainSlides, ...demoSeparators, ...outroSlides];
+    // Since slides are now generated with correct order in presentation tab,
+    // we just need to deduplicate and sort them
+    const allSlidesArray = [...slides];
     
     // Deduplicate by ID to prevent React key errors
     const seenIds = new Set<string>();
@@ -131,7 +96,7 @@ export function PresentationMode({
     });
     
     return deduplicatedSlides.sort((a, b) => a.order - b.order);
-  }, [slides, corporateSlides]);
+  }, [slides]);
 
   // Use the combined slides
   const allSlides = getAllSlides();

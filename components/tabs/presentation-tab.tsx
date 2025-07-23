@@ -198,6 +198,22 @@ ${state.demoStories
             })
           }
         }
+
+        // Add demo separator immediately after the last demo story
+        const demoSeparators = state.corporateSlides
+          .filter(s => s.position === "section-break" && s.isActive)
+          .sort((a, b) => a.order - b.order)
+
+        if (demoSeparators.length > 0) {
+          slides.push({
+            id: `corporate-${demoSeparators[0].id}`,
+            title: demoSeparators[0].title,
+            content: "",
+            type: "corporate",
+            order: slideOrder++,
+            corporateSlideUrl: demoSeparators[0].localUrl
+          })
+        }
       }
 
       // Upcoming Sprint slide
@@ -223,22 +239,6 @@ ${state.demoStories
           type: "corporate",
           order: slideOrder++,
           corporateSlideUrl: imageUrl
-        })
-      }
-
-      // Before demo stories, add demo separator if available
-      const demoSeparators = state.corporateSlides
-        .filter(s => s.position === "section-break" && s.isActive)
-        .sort((a, b) => a.order - b.order)
-
-      if (demoSeparators.length > 0 && hasDemoStories) {
-        slides.push({
-          id: `corporate-${demoSeparators[0].id}`,
-          title: demoSeparators[0].title,
-          content: "",
-          type: "corporate",
-          order: slideOrder++,
-          corporateSlideUrl: demoSeparators[0].localUrl
         })
       }
 

@@ -8,10 +8,15 @@ interface Issue {
   id: string
   key: string
   summary: string
+  description?: string
   status: string
   assignee?: string
   storyPoints?: number
   issueType: string
+  epicKey?: string
+  epicName?: string
+  epicColor?: string
+  releaseNotes?: string
 }
 
 interface SprintMetrics {
@@ -88,7 +93,11 @@ SPRINT PERFORMANCE:
 - Completed Story Points: ${completedStoryPoints}
 
 COMPLETED DELIVERABLES:
-${completedIssues.map((issue) => `- ${issue.key}: ${issue.summary} (${issue.storyPoints || 0} pts, ${issue.assignee || "Unassigned"})`).join("\n")}
+${completedIssues.map((issue) => {
+  const description = issue.description ? `\n  Description: ${issue.description}` : '';
+  const releaseNotes = issue.releaseNotes ? `\n  Release Notes: ${issue.releaseNotes}` : '';
+  return `- ${issue.key}: ${issue.summary} (${issue.storyPoints || 0} pts, ${issue.assignee || "Unassigned"})${description}${releaseNotes}`;
+}).join("\n")}
 
 ${
   data.metrics
@@ -185,6 +194,8 @@ STORY DETAILS:
 - Type: ${story.issueType}
 - Story Points: ${story.storyPoints || "Not estimated"}
 - Assignee: ${story.assignee || "Unassigned"}
+${story.description ? `- Description: ${story.description}` : ''}
+${story.releaseNotes ? `- Release Notes: ${story.releaseNotes}` : ''}
 
 SPRINT CONTEXT:
 - Sprint: ${data.sprintName}
@@ -229,9 +240,10 @@ function calculateQualityScore(checklist: Record<string, "yes" | "no" | "partial
           return 0
       }
     })
-    .filter((score): score is number => score !== null)
+    .filter((score): score is 1 | 0.5 | 0 => score !== null)
 
   if (scores.length === 0) return 0
-  const average = scores.reduce((sum, score) => sum + score, 0) / scores.length
+  const average =
+    scores.reduce((sum, score) => sum + score, 0 as number) / scores.length
   return Math.round(average * 100)
 }

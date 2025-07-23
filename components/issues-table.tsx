@@ -11,11 +11,16 @@ interface Issue {
   id: string
   key: string
   summary: string
+  description?: string
   status: string
   assignee?: string
   storyPoints?: number
   issueType: string
   isSubtask: boolean
+  epicKey?: string
+  epicName?: string
+  epicColor?: string
+  releaseNotes?: string
 }
 
 interface IssuesTableProps {
