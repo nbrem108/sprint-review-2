@@ -44,7 +44,7 @@ interface CorporateSlide {
   filename: string
   localUrl: string
   title: string
-  position: "intro" | "section-break" | "outro" | "custom"
+  position: "intro" | "meeting-guidelines" | "section-break" | "outro" | "custom"
   order: number
   isActive: boolean
 }
@@ -76,7 +76,7 @@ export function PresentationMode({
   // Function to get all slides in order
   const getAllSlides = useCallback(() => {
     const introSlides = corporateSlides
-      .filter(s => s.position === "intro" && s.isActive)
+      .filter(s => (s.position === "intro" || s.position === "meeting-guidelines") && s.isActive)
       .sort((a, b) => a.order - b.order)
       .map(s => ({
         id: `corporate-${s.id}`,
@@ -117,8 +117,20 @@ export function PresentationMode({
         corporateSlideUrl: s.localUrl
       }));
 
-    return [...introSlides, ...mainSlides, ...demoSeparators, ...outroSlides]
-      .sort((a, b) => a.order - b.order);
+    const allSlidesArray = [...introSlides, ...mainSlides, ...demoSeparators, ...outroSlides];
+    
+    // Deduplicate by ID to prevent React key errors
+    const seenIds = new Set<string>();
+    const deduplicatedSlides = allSlidesArray.filter(slide => {
+      if (seenIds.has(slide.id)) {
+        console.warn("Duplicate slide ID found and removed:", slide.id);
+        return false;
+      }
+      seenIds.add(slide.id);
+      return true;
+    });
+    
+    return deduplicatedSlides.sort((a, b) => a.order - b.order);
   }, [slides, corporateSlides]);
 
   // Use the combined slides
@@ -318,7 +330,7 @@ export function PresentationMode({
       )}
 
       {/* Slide Content */}
-      <div id="slide-container" className="flex-1 bg-white relative overflow-hidden">
+      <div id="slide-container" className={`flex-1 bg-gray-50 relative overflow-hidden ${!isFullscreen ? 'slide-content-wrapper p-1 sm:p-2' : ''}`}>
         <SlideRenderer
           slide={allSlides[currentSlide]}
           allIssues={allIssues}

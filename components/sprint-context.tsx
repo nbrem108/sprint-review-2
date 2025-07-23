@@ -68,7 +68,7 @@ interface CorporateSlide {
   blobUrl: string
   localUrl: string
   title: string
-  position: "intro" | "section-break" | "outro" | "custom"
+  position: "intro" | "meeting-guidelines" | "section-break" | "outro" | "custom"
   order: number
   isActive: boolean
   uploadedAt: string
@@ -127,14 +127,29 @@ const generateSessionId = () => `session-${Date.now()}-${Math.random().toString(
 
 // Utility function to ensure corporate slides are unique by ID
 const deduplicateCorporateSlides = (slides: CorporateSlide[]): CorporateSlide[] => {
-  const seen = new Set<string>()
-  return slides.filter(slide => {
-    if (seen.has(slide.id)) {
-      return false
+  const seenIds = new Set<string>()
+  const seenUrls = new Set<string>()
+  const result: CorporateSlide[] = []
+  
+  for (const slide of slides) {
+    // Check for duplicate IDs
+    if (seenIds.has(slide.id)) {
+      continue
     }
-    seen.add(slide.id)
-    return true
-  })
+    
+    // Check for duplicate URLs (for default slides)
+    if (slide.localUrl && seenUrls.has(slide.localUrl)) {
+      continue
+    }
+    
+    seenIds.add(slide.id)
+    if (slide.localUrl) {
+      seenUrls.add(slide.localUrl)
+    }
+    result.push(slide)
+  }
+  
+  return result
 }
 
 const serializeStateForStorage = (state: SprintState) => ({
@@ -205,8 +220,8 @@ const initialState: SprintState = {
       filename: "guidelines.png",
       blobUrl: "",
       localUrl: "/corporate-slides/guidelines.png",
-      title: "Guidelines",
-      position: "intro",
+      title: "Meeting Guidelines",
+      position: "meeting-guidelines",
       order: 1,
       isActive: true,
       uploadedAt: new Date().toISOString(),
@@ -386,8 +401,25 @@ export function SprintProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = loadStateFromStorage()
-    if (stored) dispatch({ type: "LOAD_FROM_STORAGE", payload: stored })
+    if (stored) {
+      // Ensure we don't lose the default corporate slides when loading from storage
+      const hasDefaultSlides = stored.corporateSlides?.some(slide => slide.id.startsWith("default-"))
+      if (!hasDefaultSlides) {
+        stored.corporateSlides = [...initialState.corporateSlides, ...(stored.corporateSlides || [])]
+      }
+      dispatch({ type: "LOAD_FROM_STORAGE", payload: stored })
+    }
   }, [])
+
+  // Ensure corporate slides are always deduplicated
+  useEffect(() => {
+    if (state.corporateSlides.length > 0) {
+      const deduplicated = deduplicateCorporateSlides(state.corporateSlides)
+      if (deduplicated.length !== state.corporateSlides.length) {
+        dispatch({ type: "SET_CORPORATE_SLIDES", payload: deduplicated })
+      }
+    }
+  }, [state.corporateSlides.length])
 
   const clearSession = () => dispatch({ type: "CLEAR_SESSION" })
 

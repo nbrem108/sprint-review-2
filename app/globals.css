@@ -6,6 +6,52 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Custom utilities for slide content */
+  .slide-content {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  .slide-text {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .slide-overflow {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  
+  /* Ensure content is always readable */
+  .slide-readable {
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+  }
+  
+  /* Prevent text truncation for important content */
+  .no-truncate {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+  
+  /* PowerPoint-like slide sizing */
+  .slide-container {
+    aspect-ratio: 16/9;
+    max-width: 1200px;
+    width: 100%;
+  }
+  
+  /* Ensure proper slide scaling */
+  .slide-content-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+  }
 }
 
 @layer base {

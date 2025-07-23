@@ -76,7 +76,7 @@ export function CorporateSlidesTab() {
     })
   }, [state.corporateSlides, dispatch])
 
-  const handlePositionChange = useCallback((slideId: string, position: "intro" | "section-break" | "outro" | "custom") => {
+  const handlePositionChange = useCallback((slideId: string, position: "intro" | "meeting-guidelines" | "section-break" | "outro" | "custom") => {
     dispatch({
       type: "SET_CORPORATE_SLIDES",
       payload: state.corporateSlides.map(slide =>
@@ -193,6 +193,7 @@ export function CorporateSlidesTab() {
                         className="text-sm border rounded p-1"
                       >
                         <option value="intro">Intro</option>
+                        <option value="meeting-guidelines">Meeting Guidelines</option>
                         <option value="section-break">Section Break</option>
                         <option value="outro">Outro</option>
                         <option value="custom">Custom</option>
@@ -256,6 +257,7 @@ export function CorporateSlidesTab() {
                           className="text-sm border rounded p-1"
                         >
                           <option value="intro">Intro</option>
+                          <option value="meeting-guidelines">Meeting Guidelines</option>
                           <option value="section-break">Section Break</option>
                           <option value="outro">Outro</option>
                           <option value="custom">Custom</option>

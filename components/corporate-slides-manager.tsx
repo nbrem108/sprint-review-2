@@ -19,7 +19,7 @@ interface CorporateSlide {
   blobUrl: string
   localUrl: string
   title: string
-  position: "intro" | "section-break" | "outro" | "custom"
+  position: "intro" | "meeting-guidelines" | "section-break" | "outro" | "custom"
   order: number
   isActive: boolean
   uploadedAt: string
@@ -178,6 +178,7 @@ export function CorporateSlidesManager({ slides, onSlidesUpdate }: CorporateSlid
 
   const positionLabels = {
     intro: "Introduction",
+    "meeting-guidelines": "Meeting Guidelines",
     "section-break": "Section Breaks",
     outro: "Conclusion",
     custom: "Custom Position",
@@ -187,6 +188,8 @@ export function CorporateSlidesManager({ slides, onSlidesUpdate }: CorporateSlid
     switch (position) {
       case "intro":
         return "bg-blue-100 text-blue-800"
+      case "meeting-guidelines":
+        return "bg-indigo-100 text-indigo-800"
       case "section-break":
         return "bg-purple-100 text-purple-800"
       case "outro":

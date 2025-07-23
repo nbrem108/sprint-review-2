@@ -77,7 +77,7 @@ export function PresentationTab() {
 
       // Get active corporate slides
       const activeIntroSlides = state.corporateSlides
-        .filter(s => s.position === "intro" && s.isActive)
+        .filter(s => (s.position === "intro" || s.position === "meeting-guidelines") && s.isActive)
         .sort((a, b) => a.order - b.order)
 
       // Add intro corporate slides first
@@ -213,16 +213,16 @@ ${state.demoStories
 
       // Custom slides from uploads
       for (let i = 0; i < state.additionalSlides.length; i++) {
+        const file = state.additionalSlides[i];
+        const imageUrl = URL.createObjectURL(file);
+        
         slides.push({
-          id: `slide-${slideOrder}`,
-          title: `Additional Slide ${i + 1}`,
-          content: `# Additional Slide ${i + 1}
-
-*Custom slide uploaded by user*
-
-[Image content would be displayed here]`,
-          type: "custom",
+          id: `additional-slide-${slideOrder}`,
+          title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+          content: "",
+          type: "corporate",
           order: slideOrder++,
+          corporateSlideUrl: imageUrl
         })
       }
 
