@@ -6,6 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Utility function to check if an issue is completed
+export function isIssueCompleted(status: string): boolean {
+  const completedStatuses = ["done", "closed", "resolved"];
+  return completedStatuses.some(completedStatus => 
+    status?.toLowerCase().includes(completedStatus)
+  );
+}
+
 export interface EpicBreakdown {
   name: string
   total: number
@@ -34,19 +42,11 @@ export function getEpicBreakdown(issues: Issue[]): EpicBreakdown[] {
   // Convert to array and aggregate metrics
   return Object.values(byEpic).map((epic) => {
     const total = epic.issues.length;
-    const completed = epic.issues.filter(i => 
-      i.status?.toLowerCase().includes("done") || 
-      i.status?.toLowerCase().includes("closed") || 
-      i.status?.toLowerCase().includes("resolved")
-    ).length;
+    const completed = epic.issues.filter(i => isIssueCompleted(i.status || "")).length;
     
     const totalPoints = epic.issues.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
     const completedPoints = epic.issues
-      .filter(i => 
-        i.status?.toLowerCase().includes("done") || 
-        i.status?.toLowerCase().includes("closed") || 
-        i.status?.toLowerCase().includes("resolved")
-      )
+      .filter(i => isIssueCompleted(i.status || ""))
       .reduce((sum, i) => sum + (i.storyPoints || 0), 0);
     
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;

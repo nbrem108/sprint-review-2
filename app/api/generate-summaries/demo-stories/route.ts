@@ -30,9 +30,9 @@ function formatSummary(raw: string): string {
   const lines = raw.trim().split("\n").filter(Boolean)
 
   // Fixes cases where model returns extra line breaks
-  if (lines.length >= 3) {
+  if (lines.length >= 7) {
     const title = lines[0].replace(/^(\*\*|)(.*?)(\*\*|)$/, "**$2**")
-    const body = lines.slice(1).join(" ")
+    const body = lines.slice(1).join("\n")
     return `${title}\n${body}`
   }
 
@@ -46,14 +46,17 @@ async function generateDemoStoriesSummaries(data: DemoStoriesRequest): Promise<S
     const story = data.issues.find((issue) => issue.id === storyId)
     if (!story) continue
 
-    const prompt = `You are generating a concise and professional demo highlight summary for a Sprint Review deck.
+    const prompt = `You are generating a comprehensive demo highlight summary for a Sprint Review deck.
 
-Use this EXACT format with exactly 4 lines (no more, no less):
+Use this EXACT format with exactly 7 lines (no more, no less):
 
 Line 1: [**Feature Name or Goal**]
 Line 2: One sentence on what it does.
 Line 3: One sentence on why it matters — describe the user or business value.
 Line 4: One sentence on who benefits — include user role and what job it helps them accomplish.
+Line 5: Customer Value Proposition — one sentence on the specific value this feature provides to customers.
+Line 6: Success Metrics — one sentence on how success will be measured or what goals this achieves.
+Line 7: Competitive Differentiation — one sentence on what makes this feature unique or better than alternatives.
 
 Here are the ticket details:
 - Summary: ${story.summary}
@@ -65,13 +68,13 @@ Here are the ticket details:
 - Assignee: ${story.assignee || "(none)"}
 - Epic: ${story.epicName || "(none)"}
 
-IMPORTANT: Return exactly 4 lines. Each line should be on its own line. Do not combine lines 3 and 4. Use clear stakeholder language. Do not include bullet points, markdown formatting, or section headers.`
+IMPORTANT: Return exactly 7 lines. Each line should be on its own line. Use clear stakeholder language. Do not include bullet points, markdown formatting, or section headers.`
 
     const { text } = await generateText({
       model: openai("gpt-4o"),
       prompt,
       system:
-        "You are a Product Owner writing demo slide content for Sprint Reviews. You MUST return exactly 4 lines: Line 1 = Feature name, Line 2 = What it does, Line 3 = Why it matters, Line 4 = Who benefits. Each line should be separate and distinct. Use stakeholder-friendly tone and clear, concise language.",
+        "You are a Product Owner writing comprehensive demo slide content for Sprint Reviews. You MUST return exactly 7 lines: Line 1 = Feature name, Line 2 = What it does, Line 3 = Why it matters, Line 4 = Who benefits, Line 5 = Customer Value Proposition, Line 6 = Success Metrics, Line 7 = Competitive Differentiation. Each line should be separate and distinct. Use stakeholder-friendly tone and clear, concise language.",
       temperature: 0.7,
       maxTokens: 600,
     })

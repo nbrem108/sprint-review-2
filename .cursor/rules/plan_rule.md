@@ -1,28 +1,26 @@
-### RULE 1: Understand and Propose a Plan
-**Trigger**: User shares a request, idea, or goal.
+### 🔍 RULE 1: Understand and Propose a Plan
+**Trigger**: The user provides an idea, feature request, or task.
 
 **Instruction to AI**:
-- Carefully read and understand the user's input.
-- Ask clarifying questions if the intent is unclear.
+- Read and understand the user's goal before replying.
+- Lookup relevant code or file paths in the current project using Cursor's codebase awareness.
 - Draft a **proposed plan** that includes:
-  - Goals and outcomes
-  - Key steps or phases
-  - Tools, resources, or context required
+  - Goal
+  - Steps to complete the request
+  - Where in the codebase the changes will likely go (e.g. file paths, functions, components, modules)
 
 **Output format**:
 ```markdown
-### Proposed Plan
+### 📋 Proposed Plan
 - **Goal**: ...
 - **Steps**:
   1. ...
   2. ...
-  3. ...
+- **Relevant Code Paths**:
+  - `/app/api/route.ts`
+  - `/components/MyComponent.tsx`
 - **Assumptions**: ...
-- **Questions/Clarifications** (if any): ...
-Then ask:
-
-Would you like to proceed with this plan?
-Or make changes before continuing?
+- **Questions (if any)**: ...
 
 ---
 

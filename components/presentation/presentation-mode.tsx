@@ -5,6 +5,7 @@ import { SlideRenderer } from "./slide-renderer"
 import { PresentationControls } from "./presentation-controls"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Minimize, X } from "lucide-react"
+import { exportService } from "@/lib/export-service"
 
 interface PresentationSlide {
   id: string
@@ -218,11 +219,49 @@ export function PresentationMode({
   const exportHTML = async () => {
     setIsExporting(true)
     try {
-      // Simulate HTML export
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Exporting HTML...")
+      // Create presentation object for export
+      const presentation = {
+        id: `presentation-${Date.now()}`,
+        title: allSlides[0]?.title || 'Sprint Review',
+        slides: allSlides,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          sprintName: allSlides[0]?.title || 'Sprint Review',
+          totalSlides: allSlides.length,
+          hasMetrics: !!sprintMetrics,
+          demoStoriesCount: allSlides.filter(s => s.type === 'demo-story').length,
+          customSlidesCount: allSlides.filter(s => s.type === 'corporate').length,
+        },
+      }
+
+      // Call API endpoint for HTML export
+      const response = await fetch('/api/export/html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues,
+          upcomingIssues,
+          sprintMetrics,
+          options: { format: 'html' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export HTML')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const fileName = exportService.generateFileName(presentation, 'html')
+      exportService.downloadFile(blob, fileName)
+
+      console.log("HTML export completed successfully")
     } catch (error) {
       console.error("Export error:", error)
+      // You could add toast notification here
     } finally {
       setIsExporting(false)
     }
@@ -231,18 +270,103 @@ export function PresentationMode({
   const exportMarkdown = async () => {
     setIsExportingMarkdown(true)
     try {
-      // Simulate Markdown export
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      console.log("Exporting Markdown...")
+      // Create presentation object for export
+      const presentation = {
+        id: `presentation-${Date.now()}`,
+        title: allSlides[0]?.title || 'Sprint Review',
+        slides: allSlides,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          sprintName: allSlides[0]?.title || 'Sprint Review',
+          totalSlides: allSlides.length,
+          hasMetrics: !!sprintMetrics,
+          demoStoriesCount: allSlides.filter(s => s.type === 'demo-story').length,
+          customSlidesCount: allSlides.filter(s => s.type === 'corporate').length,
+        },
+      }
+
+      // Call API endpoint for Markdown export
+      const response = await fetch('/api/export/markdown', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues,
+          upcomingIssues,
+          sprintMetrics,
+          options: { format: 'markdown' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export Markdown')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const fileName = exportService.generateFileName(presentation, 'md')
+      exportService.downloadFile(blob, fileName)
+
+      console.log("Markdown export completed successfully")
     } catch (error) {
       console.error("Export error:", error)
+      // You could add toast notification here
     } finally {
       setIsExportingMarkdown(false)
     }
   }
 
   const exportPDF = async () => {
-    console.log("Exporting PDF...")
+    setIsExporting(true)
+    try {
+      // Create presentation object for export
+      const presentation = {
+        id: `presentation-${Date.now()}`,
+        title: allSlides[0]?.title || 'Sprint Review',
+        slides: allSlides,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          sprintName: allSlides[0]?.title || 'Sprint Review',
+          totalSlides: allSlides.length,
+          hasMetrics: !!sprintMetrics,
+          demoStoriesCount: allSlides.filter(s => s.type === 'demo-story').length,
+          customSlidesCount: allSlides.filter(s => s.type === 'corporate').length,
+        },
+      }
+
+      // Call API endpoint for PDF export
+      const response = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues,
+          upcomingIssues,
+          sprintMetrics,
+          options: { format: 'pdf' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export PDF')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const fileName = exportService.generateFileName(presentation, 'pdf')
+      exportService.downloadFile(blob, fileName)
+
+      console.log("PDF export completed successfully")
+    } catch (error) {
+      console.error("Export error:", error)
+      // You could add toast notification here
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   if (allSlides.length === 0) {

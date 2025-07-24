@@ -19,11 +19,12 @@ import {
   BarChart3,
   Trash2,
   RefreshCw,
+  FileCode,
 } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
 import { PresentationMode } from "@/components/presentation/presentation-mode"
-import { getEpicBreakdown, type EpicBreakdown } from "@/lib/utils"
+import { getEpicBreakdown, type EpicBreakdown, isIssueCompleted } from "@/lib/utils"
 import { calculateQualityScore } from "@/lib/utils"
 
 interface PresentationSlide {
@@ -109,7 +110,7 @@ export function PresentationTab() {
 
 **Team Performance Overview**
 - Total Issues: ${state.issues.length}
-- Completed Issues: ${state.issues.filter((i) => i.status === "Done").length}
+- Completed Issues: ${state.issues.filter((i) => isIssueCompleted(i.status || "")).length}
 - Demo Stories: ${state.demoStories.length}
 
 **Prepared by:** Sprint Review Generator
@@ -325,18 +326,203 @@ ${state.demoStories
 
     setIsExporting(true)
     try {
-      // Simulate PDF export
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Exporting PDF...")
+      // Call API endpoint for PDF export
+      const response = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues: state.issues,
+          upcomingIssues: state.upcomingIssues,
+          sprintMetrics: state.metrics,
+          options: { format: 'pdf' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export PDF')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${presentation.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
       toast({
         title: "PDF Export",
-        description: "PDF export functionality coming soon!",
+        description: "PDF exported successfully!",
       })
     } catch (error) {
       console.error("Export error:", error)
       toast({
         title: "Export Failed",
         description: "Failed to export PDF. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportToHTML = async () => {
+    if (!presentation) return
+
+    setIsExporting(true)
+    try {
+      // Call API endpoint for HTML export
+      const response = await fetch('/api/export/html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues: state.issues,
+          upcomingIssues: state.upcomingIssues,
+          sprintMetrics: state.metrics,
+          options: { format: 'html' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export HTML')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${presentation.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "HTML Export",
+        description: "HTML exported successfully!",
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export HTML. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportToMarkdown = async () => {
+    if (!presentation) return
+
+    setIsExporting(true)
+    try {
+      // Call API endpoint for Markdown export
+      const response = await fetch('/api/export/markdown', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues: state.issues,
+          upcomingIssues: state.upcomingIssues,
+          sprintMetrics: state.metrics,
+          options: { format: 'markdown' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export Markdown')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${presentation.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Markdown Export",
+        description: "Markdown exported successfully!",
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export Markdown. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportExecutiveMetrics = async () => {
+    if (!state.metrics) {
+      toast({
+        title: "No Metrics",
+        description: "No metrics data available for export.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      // Call API endpoint for executive metrics export
+      const response = await fetch('/api/export/metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sprintMetrics: state.metrics,
+          allIssues: state.issues,
+          options: { format: 'metrics', executiveFormat: true }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export executive metrics')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Sprint_${state.metrics.sprintNumber}_Executive_Metrics_${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Executive Metrics Export",
+        description: "Executive metrics exported successfully!",
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export executive metrics. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -569,6 +755,36 @@ ${state.demoStories
                   >
                     {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                     Export PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportToHTML}
+                    disabled={isExporting}
+                    className="gap-2 bg-transparent"
+                  >
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode className="h-4 w-4" />}
+                    Export HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportToMarkdown}
+                    disabled={isExporting}
+                    className="gap-2 bg-transparent"
+                  >
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    Export MD
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportExecutiveMetrics}
+                    disabled={isExporting}
+                    className="gap-2 bg-transparent"
+                  >
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+                    Executive Metrics
                   </Button>
                   <Button
                     variant="outline"

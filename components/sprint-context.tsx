@@ -87,6 +87,7 @@ interface SprintState {
   issues: Issue[]
   upcomingIssues: Issue[]
   demoStories: string[]
+  demoStoryScreenshots: Record<string, string> // Base64 encoded screenshots
   metrics: SprintMetrics | null
   summaries: {
     currentSprint?: string
@@ -141,6 +142,8 @@ type SprintAction =
   | { type: "SET_ISSUES"; payload: Issue[] }
   | { type: "SET_UPCOMING_ISSUES"; payload: Issue[] }
   | { type: "TOGGLE_DEMO_STORY"; payload: string }
+  | { type: "ADD_DEMO_SCREENSHOT"; payload: { storyId: string; screenshot: string } }
+  | { type: "REMOVE_DEMO_SCREENSHOT"; payload: string }
   | { type: "SET_METRICS"; payload: SprintMetrics }
   | { type: "SET_SUMMARIES"; payload: SprintState["summaries"] }
   | { type: "ADD_SLIDE"; payload: File }
@@ -193,6 +196,7 @@ const serializeStateForStorage = (state: SprintState) => ({
   issues: state.issues,
   upcomingIssues: state.upcomingIssues,
   demoStories: state.demoStories,
+  demoStoryScreenshots: state.demoStoryScreenshots,
   metrics: state.metrics,
   summaries: state.summaries,
   corporateSlides: state.corporateSlides,
@@ -234,6 +238,7 @@ const initialState: SprintState = {
   issues: [],
   upcomingIssues: [],
   demoStories: [],
+  demoStoryScreenshots: {},
   metrics: null,
   summaries: {},
   additionalSlides: [],
@@ -308,6 +313,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         issues: [],
         upcomingIssues: [],
         demoStories: [],
+        demoStoryScreenshots: {},
         metrics: null,
         summaries: {},
       }
@@ -321,6 +327,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         issues: [],
         upcomingIssues: [],
         demoStories: [],
+        demoStoryScreenshots: {},
         metrics: null,
         summaries: {},
       }
@@ -331,6 +338,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         selectedSprint: action.payload,
         issues: [],
         demoStories: [],
+        demoStoryScreenshots: {},
         summaries: {},
       }
       break
@@ -354,6 +362,19 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
           ? state.demoStories.filter((id) => id !== action.payload)
           : [...state.demoStories, action.payload],
       }
+      break
+    case "ADD_DEMO_SCREENSHOT":
+      newState = {
+        ...state,
+        demoStoryScreenshots: {
+          ...state.demoStoryScreenshots,
+          [action.payload.storyId]: action.payload.screenshot,
+        },
+      }
+      break
+    case "REMOVE_DEMO_SCREENSHOT":
+      const { [action.payload]: _, ...newScreenshots } = state.demoStoryScreenshots
+      newState = { ...state, demoStoryScreenshots: newScreenshots }
       break
     case "SET_METRICS":
       newState = { ...state, metrics: action.payload }
@@ -384,6 +405,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         issues: [],
         upcomingIssues: [],
         demoStories: [],
+        demoStoryScreenshots: {},
         metrics: null,
         summaries: {},
         additionalSlides: [],

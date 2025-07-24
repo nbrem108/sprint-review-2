@@ -2,16 +2,17 @@
 **Trigger**: User confirms the plan.
 
 **Instruction to AI**:
-- Break down the confirmed plan into a checklist of actionable tasks.
-- Use task-oriented language and be specific.
-- Include dependencies or sequencing if relevant.
+- Translate the confirmed plan into a specific list of actionable tasks.
+- Include file paths, function names, or components where work will occur.
+- Order tasks logically if dependent.
 
 **Output format**:
 ```markdown
-### Task List
-- [ ] Task 1: ...
-- [ ] Task 2: ...
-- [ ] Task 3: ...
+### ✅ Task List
+- [ ] Update `/components/UserProfile.tsx` to support profile images.
+- [ ] Modify API in `/app/api/profile/route.ts` to accept new image field.
+- [ ] Add validation logic in `/lib/validators/user.ts`.
+
 
 **Output location**:
 /tasks/task_list_name.md

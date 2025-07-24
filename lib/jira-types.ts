@@ -14,11 +14,8 @@ export const JIRA_FIELDS = {
 
   // Custom fields with their mappings
   STORY_POINTS: "customfield_10127",
-  EPIC_PARENT_NAME: "customfield_10011",
-  EPIC_LINK: "customfield_10014",
   EPIC_NAME: "customfield_10015",
-  EPIC_STATUS: "customfield_10016",
-  RELEASE_NOTES: "customfield_10000",
+  RELEASE_NOTES: "customfield_10113",
 } as const;
 
 // Type for field mapping
@@ -70,10 +67,7 @@ export interface JiraIssue {
       iconUrl?: string
     }
     [JIRA_FIELDS.STORY_POINTS]?: number
-    [JIRA_FIELDS.EPIC_PARENT_NAME]?: string
-    [JIRA_FIELDS.EPIC_LINK]?: string
     [JIRA_FIELDS.EPIC_NAME]?: string
-    [JIRA_FIELDS.EPIC_STATUS]?: string
     [JIRA_FIELDS.RELEASE_NOTES]?: string
     parent?: {
       key: string
@@ -257,16 +251,8 @@ export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
     epicColor = issue.fields.epic.color?.key;
   } else {
     // Check for epic information in custom fields
-    const epicLink = issue.fields[JIRA_FIELDS.EPIC_LINK];
-    const epicParentName = issue.fields[JIRA_FIELDS.EPIC_PARENT_NAME];
     const epicNameField = issue.fields[JIRA_FIELDS.EPIC_NAME];
 
-    if (epicLink && typeof epicLink === 'string') {
-      epicKey = epicLink;
-    }
-    if (epicParentName && typeof epicParentName === 'string') {
-      epicName = epicParentName;
-    }
     if (epicNameField && typeof epicNameField === 'string') {
       epicName = epicNameField;
     }

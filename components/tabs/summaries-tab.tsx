@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sparkles, Loader2, RefreshCw, Copy, AlertCircle, FileText, Target, Calendar, Zap, Presentation } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface GenerationStatus {
   currentSprint: "idle" | "generating" | "complete" | "error"
@@ -865,7 +866,7 @@ export function SummariesTab() {
               </div>
             </CardTitle>
             <CardDescription>
-              AI-generated summaries for each selected demo story. Each summary follows a 4-line format: Feature Name, What it does, Why it matters, Who benefits.
+              AI-generated summaries for each selected demo story. Each summary follows a 7-line format: Feature Name, What it does, Why it matters, Who benefits, Customer Value Proposition, Success Metrics, Competitive Differentiation.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -918,9 +919,9 @@ export function SummariesTab() {
                           <Textarea
                             value={tempSummary}
                             onChange={(e) => setTempSummary(e.target.value)}
-                            rows={6}
+                            rows={8}
                             className="font-mono text-sm"
-                            placeholder="Enter the 4-line demo summary format..."
+                            placeholder="Enter the 7-line demo summary format..."
                           />
                           <div className="flex gap-2">
                             <Button onClick={() => saveEdit(`demo-${storyId}`)}>Save Changes</Button>
@@ -930,9 +931,41 @@ export function SummariesTab() {
                           </div>
                         </div>
                       ) : (
-                        <div className="prose prose-sm max-w-none">
-                          <div className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg border font-medium">
-                            {summary}
+                        <div className="space-y-4">
+                          <div className="prose prose-sm max-w-none">
+                            <div className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg border font-medium">
+                              {summary}
+                            </div>
+                          </div>
+                          
+                          {/* Screenshot Upload Section */}
+                          <div className="border-t pt-4">
+                            <h5 className="font-medium text-sm mb-3">Demo Screenshot</h5>
+                            <ImageUpload
+                              onImageUpload={(base64) => {
+                                dispatch({
+                                  type: "ADD_DEMO_SCREENSHOT",
+                                  payload: { storyId, screenshot: base64 }
+                                })
+                                toast({
+                                  title: "Screenshot Uploaded",
+                                  description: "Screenshot has been added to this demo story.",
+                                })
+                              }}
+                              onImageRemove={() => {
+                                dispatch({
+                                  type: "REMOVE_DEMO_SCREENSHOT",
+                                  payload: storyId
+                                })
+                                toast({
+                                  title: "Screenshot Removed",
+                                  description: "Screenshot has been removed from this demo story.",
+                                })
+                              }}
+                              currentImage={state.demoStoryScreenshots[storyId]}
+                              maxSize={5}
+                              className="max-w-md"
+                            />
                           </div>
                         </div>
                       )}
@@ -946,7 +979,7 @@ export function SummariesTab() {
               <div className="text-center py-8 text-muted-foreground">
                 <div className="space-y-2">
                   <p>Click the refresh button to generate AI-powered demo story summaries</p>
-                  <p className="text-xs">Each summary will follow a 4-line format optimized for presentation slides</p>
+                  <p className="text-xs">Each summary will follow a 7-line format optimized for presentation slides</p>
                 </div>
               </div>
             )}

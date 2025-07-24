@@ -6,6 +6,8 @@ import { CheckCircle, Clock, Target, TrendingUp, BarChart3, Users, Calendar, Use
 import ReactMarkdown from "react-markdown"
 import Image from "next/image"
 import { marked } from 'marked';
+import { useSprintContext } from "@/components/sprint-context"
+import { isIssueCompleted } from "@/lib/utils"
 
 interface PresentationSlide {
   id: string
@@ -343,18 +345,33 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
           </div>
           
           <div className="flex-1 flex flex-col justify-center items-center p-8 text-center overflow-y-auto max-h-[calc(100vh-10rem)]">
-            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint Metrics</h2>
-            <div className="text-lg sm:text-xl text-gray-600 bg-gray-50 rounded-lg p-4">No metrics data available</div>
+            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Executive Performance Dashboard</h2>
+            <div className="text-lg sm:text-xl text-gray-600 bg-gray-50 rounded-lg p-4">No performance data available</div>
           </div>
         </div>
       </div>
     )
   }
 
-  const completedIssues = allIssues.filter((issue: Issue) => issue.status === "Done")
+  const completedIssues = allIssues.filter((issue: Issue) => isIssueCompleted(issue.status || ""))
   const completionRate = allIssues.length > 0 ? Math.round((completedIssues.length / allIssues.length) * 100) : 0
-
   const qualityScore = calculateQualityScore(sprintMetrics.qualityChecklist)
+  
+  // Executive-friendly metrics calculations
+  const velocity = sprintMetrics.completedTotalPoints
+  const velocityTarget = sprintMetrics.estimatedPoints
+  const velocityAchievement = velocityTarget > 0 ? Math.round((velocity / velocityTarget) * 100) : 0
+  const efficiencyScore = Math.round((velocityAchievement + qualityScore) / 2)
+  
+  // Executive summary status
+  const getExecutiveStatus = () => {
+    if (efficiencyScore >= 85) return { status: "EXCEEDING TARGETS", color: "text-green-600", bg: "bg-green-50", border: "border-green-200" }
+    if (efficiencyScore >= 70) return { status: "MEETING TARGETS", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" }
+    if (efficiencyScore >= 50) return { status: "NEEDS ATTENTION", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" }
+    return { status: "CRITICAL", color: "text-red-600", bg: "bg-red-50", border: "border-red-200" }
+  }
+  
+  const executiveStatus = getExecutiveStatus()
 
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
@@ -376,50 +393,93 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
         
         {/* Main Content */}
         <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-6 lg:p-8 overflow-hidden">
+          {/* Executive Header */}
           <div className="flex-shrink-0 mb-4 sm:mb-6 lg:mb-8 text-center">
-            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint Metrics & Performance</h2>
+            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Executive Performance Dashboard</h2>
             <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-ca-blue-600 to-ca-indigo-600 rounded-full mx-auto"></div>
+            
+            {/* Executive Status Banner */}
+            <div className={`mt-4 p-3 rounded-lg ${executiveStatus.bg} ${executiveStatus.border} border`}>
+              <div className={`text-lg sm:text-xl font-bold ${executiveStatus.color}`}>
+                {executiveStatus.status}
+              </div>
+              <div className="text-sm text-gray-600">
+                Overall Efficiency Score: {efficiencyScore}%
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            {/* Metrics Grid */}
+            {/* Key Performance Indicators */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 flex-shrink-0">
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-blue-50 to-ca-indigo-50 rounded-lg border border-ca-blue-200">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-blue-600 mb-2">{sprintMetrics.plannedItems}</div>
-                <div className="text-sm sm:text-base text-ca-blue-700 font-medium">Planned Items</div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-blue-600 mb-2">{velocity}</div>
+                <div className="text-sm sm:text-base text-ca-blue-700 font-medium">Velocity (Points)</div>
+                <div className="text-xs text-ca-blue-600 mt-1">{velocityAchievement}% of Target</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">{sprintMetrics.completedTotalPoints}</div>
-                <div className="text-sm sm:text-base text-green-700 font-medium">Completed Points</div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">{completionRate}%</div>
+                <div className="text-sm sm:text-base text-green-700 font-medium">Completion Rate</div>
+                <div className="text-xs text-green-600 mt-1">{completedIssues.length}/{allIssues.length} Items</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-orange-50 to-amber-50 rounded-lg border border-ca-orange-200">
                 <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-orange-600 mb-2">{sprintMetrics.testCoverage}%</div>
-                <div className="text-sm sm:text-base text-ca-orange-700 font-medium">Test Coverage</div>
+                <div className="text-sm sm:text-base text-ca-orange-700 font-medium">Quality Assurance</div>
+                <div className="text-xs text-ca-orange-600 mt-1">Test Coverage</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-indigo-50 to-purple-50 rounded-lg border border-ca-indigo-200">
                 <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-indigo-600 mb-2">{qualityScore}%</div>
                 <div className="text-sm sm:text-base text-ca-indigo-700 font-medium">Quality Score</div>
+                <div className="text-xs text-ca-indigo-600 mt-1">Standards Compliance</div>
               </div>
             </div>
 
-            {/* Quality Checklist - Scrollable */}
+            {/* Executive Summary */}
             <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-10rem)]">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Quality Standards Achievement</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                {Object.entries(sprintMetrics.qualityChecklist).map(([key, value]) => (
-                  <div key={key} className="text-center p-3 sm:p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                    <div className="mb-2">
-                      {value === "yes" ? (
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-green-200 rounded-full mx-auto"></div>
-                      ) : value === "partial" ? (
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-yellow-200 rounded-full mx-auto"></div>
-                      ) : (
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-red-200 rounded-full mx-auto"></div>
-                      )}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Performance Summary */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Performance Summary</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Sprint Commitment:</span>
+                      <span className={`font-semibold ${velocityAchievement >= 80 ? 'text-green-600' : velocityAchievement >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {velocityAchievement}%
+                      </span>
                     </div>
-                    <div className="text-xs sm:text-sm lg:text-base text-gray-600 capitalize font-medium break-words">{key.replace(/([A-Z])/g, " $1").trim()}</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Quality Standards:</span>
+                      <span className={`font-semibold ${qualityScore >= 80 ? 'text-green-600' : qualityScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {qualityScore}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Team Efficiency:</span>
+                      <span className={`font-semibold ${efficiencyScore >= 80 ? 'text-green-600' : efficiencyScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {efficiencyScore}%
+                      </span>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Quality Standards Overview */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Quality Standards Overview</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(sprintMetrics.qualityChecklist).map(([key, value]) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          value === "yes" ? "bg-green-500" : 
+                          value === "partial" ? "bg-yellow-500" : 
+                          "bg-red-500"
+                        }`}></div>
+                        <span className="text-sm text-gray-600 capitalize">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -432,6 +492,10 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
 // Demo Story Slide Component
 const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; containerClass: string; isFullscreen?: boolean }> = ({ slide, issues, containerClass, isFullscreen }) => {
   const [imageError, setImageError] = useState(false);
+  
+  // Get screenshot from context if available
+  const { state } = useSprintContext();
+  const screenshot = slide.storyId ? state.demoStoryScreenshots[slide.storyId] : null;
   
   // Enhanced content processing with fallbacks and better organization
   const processContent = (content: string) => {
@@ -456,7 +520,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     return { hasContent: true, processedContent: processed, sections };
   };
 
-  // Enhanced demo summary processing for 4-line format
+  // Enhanced demo summary processing for 7-line format
   const processDemoSummary = (content: string) => {
     if (!content || content.trim() === '') {
       return { lines: [], hasContent: false };
@@ -467,7 +531,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0)
-      .slice(0, 4); // Ensure max 4 lines
+      .slice(0, 7); // Ensure max 7 lines
     
     return { lines, hasContent: lines.length > 0 };
   };
@@ -508,7 +572,9 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
       storyPoints: issue.storyPoints || 0,
       type: issue.issueType || 'Story',
       epic: epicDisplay,
-      summary: issue.summary || 'No summary available'
+      summary: issue.summary || 'No summary available',
+      releaseNotes: issue.releaseNotes,
+      description: issue.description
     };
   };
 
@@ -573,22 +639,63 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
               </h2>
             </div>
             
+            {/* Additional Text Box for Release Notes or Detailed Description */}
+            <div className="flex-shrink-0 mb-6 sm:mb-8 lg:mb-10">
+              <div className="border-2 border-red-500 rounded-lg p-4 sm:p-6 lg:p-8 bg-white/5 backdrop-blur-sm">
+                <h3 className={`${cardTitleClass} text-white mb-3 sm:mb-4`}>
+                  Release Notes / Detailed Description
+                </h3>
+                <div className={`${contentClass} text-white leading-relaxed`}>
+                  {issueDetails?.releaseNotes ? (
+                    <div className="whitespace-pre-wrap">
+                      {issueDetails.releaseNotes}
+                    </div>
+                  ) : issueDetails?.description ? (
+                    <div className="whitespace-pre-wrap">
+                      {issueDetails.description}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 italic">
+                      Detailed summary in paragraph form Or better yet add the release note here
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Demo Summary Content */}
             <div className="flex-1 min-h-0 flex flex-col justify-center">
               {demoSummary.hasContent ? (
                 <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-                  {demoSummary.lines.map((line, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm sm:text-base lg:text-lg`}>
-                        {index + 1}
+                  {demoSummary.lines.map((line, index) => {
+                    const labels = [
+                      "Feature",
+                      "What it does",
+                      "Why it matters",
+                      "Who benefits",
+                      "Customer Value",
+                      "Success Metrics",
+                      "Competitive Edge"
+                    ];
+                    
+                    return (
+                      <div key={index} className="flex items-start gap-4">
+                        <div className={`flex-shrink-0 w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm sm:text-base lg:text-lg`}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs sm:text-sm lg:text-base font-medium text-blue-300`}>
+                              {labels[index] || `Point ${index + 1}`}:
+                            </span>
+                          </div>
+                          <p className={demoLineClass}>
+                            {line}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className={demoLineClass}>
-                          {line}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -601,8 +708,8 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
           </div>
 
           {/* Issue Details Sidebar */}
-          <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 border border-white/20">
+          <div className={`${isFullscreen ? 'lg:w-[32rem] xl:w-[40rem] 2xl:w-[48rem]' : 'lg:w-80'} flex-shrink-0 space-y-4`}>
+            <div className={`bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 ${isFullscreen ? 'p-3 sm:p-4' : 'p-4 sm:p-6'}`}>
               <h3 className={`${cardTitleClass} text-white mb-4`}>
                 Story Details
               </h3>
@@ -627,6 +734,35 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                   <span className={`${contentClass} text-gray-300 font-medium`}>Epic:</span>
                   <p className={`${contentClass} text-white`}>{issueDetails?.epic}</p>
                 </div>
+              </div>
+            </div>
+            
+            {/* Screenshot Display */}
+            <div className={`bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8' : 'p-4 sm:p-6'}`}>
+              <h3 className={`${cardTitleClass} text-white mb-4`}>
+                Demo Screenshot
+              </h3>
+              
+              <div className={`flex items-center justify-center ${isFullscreen ? 'p-2' : 'p-1'}`}>
+                {screenshot ? (
+                  <img
+                    src={screenshot}
+                    alt="Demo screenshot"
+                    className={`${isFullscreen ? 'max-h-96 lg:max-h-[32rem] xl:max-h-[40rem] 2xl:max-h-[48rem]' : 'max-h-48'} w-full object-contain rounded-lg border border-white/20`}
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-4 text-center">
+                    <img
+                      src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg"
+                      alt="Command Alkon"
+                      className={`${isFullscreen ? 'h-16 w-16' : 'h-12 w-12'} opacity-50`}
+                    />
+                    <p className={`${contentClass} text-gray-400 mt-2`}>
+                      No screenshot uploaded
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -978,10 +1114,10 @@ function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen
 
   // Calculate overall sprint statistics
   const totalIssues = validIssues.length;
-  const completedIssues = validIssues.filter(i => i.status === 'Done').length;
+  const completedIssues = validIssues.filter(i => isIssueCompleted(i.status || "")).length;
   const totalStoryPoints = validIssues.reduce((sum, i) => sum + (i.storyPoints || 0), 0);
   const completedStoryPoints = validIssues
-    .filter(i => i.status === 'Done')
+    .filter(i => isIssueCompleted(i.status || ""))
     .reduce((sum, i) => sum + (i.storyPoints || 0), 0);
   const overallCompletionRate = totalStoryPoints > 0 
     ? Math.round((completedStoryPoints / totalStoryPoints) * 100) 
@@ -1184,7 +1320,7 @@ const ReviewLegend: React.FC<{
   // Enhanced error handling and edge cases
   const safeIssues = Array.isArray(issues) ? issues : [];
   const totalIssues = safeIssues.length;
-  const completedIssues = safeIssues.filter(issue => issue.status === 'Done').length;
+  const completedIssues = safeIssues.filter(issue => isIssueCompleted(issue.status || "")).length;
   const completionRate = totalIssues > 0 ? Math.round((completedIssues / totalIssues) * 100) : 0;
   
   // Calculate epic breakdown for legend with enhanced error handling

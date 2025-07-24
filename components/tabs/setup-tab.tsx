@@ -90,6 +90,56 @@ export function SetupTab() {
     }
   }
 
+  const testReleaseNotesField = async () => {
+    if (!state.selectedSprint) {
+      toast({
+        title: "No Sprint Selected",
+        description: "Please select a sprint first to test release notes fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsAnalyzing(true)
+    try {
+      const response = await fetch('/api/test-release-notes-field', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          sprintId: parseInt(state.selectedSprint.id)
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('🔍 Release Notes Field Analysis:', data)
+      
+      if (data.recommendation) {
+        toast({
+          title: "Release Notes Field Found!",
+          description: `Recommended field: ${data.recommendation.fieldName} (${data.recommendation.reason})`,
+        })
+      } else {
+        toast({
+          title: "No Release Notes Fields Found",
+          description: "Check the browser console for all available custom fields.",
+        })
+      }
+    } catch (error) {
+      console.error('Release notes field test error:', error)
+      toast({
+        title: "Test Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   const testEpicExtraction = async () => {
     if (!state.issues || state.issues.length === 0) {
       toast({
@@ -139,6 +189,16 @@ export function SetupTab() {
           <p className="text-muted-foreground">Configure your JIRA connection and select sprint data</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={testReleaseNotesField} 
+            disabled={isAnalyzing || !state.selectedSprint}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+            Test Release Notes Field
+          </Button>
           <Button 
             onClick={testEpicExtraction} 
             disabled={!state.issues || state.issues.length === 0}
