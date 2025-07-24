@@ -72,14 +72,14 @@ interface SlideRendererProps {
 function SlideBackground({ children, className = "", isFullscreen = false }: { children: React.ReactNode; className?: string; isFullscreen?: boolean }) {
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
-      {/* Background image for title slides */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/corporate-slides/blank_template.png')",
-          filter: "brightness(0.7) contrast(1.1)"
-        }}
-      />
+      {/* Company Logo - positioned in bottom right corner */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <img 
+          src="/company-logos/CommandAlkon_Logo_Primary_White.svg" 
+          alt="Command Alkon" 
+          className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-80 hover:opacity-100 transition-opacity`}
+        />
+      </div>
       
       {/* Content overlay with improved contrast and responsive padding */}
       <div className="relative z-10 w-full h-full flex flex-col">
@@ -210,38 +210,52 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
 
 function TitleSlide({ slide, containerClass, titleClass }: any) {
   return (
-    <div className={`${containerClass} relative`}>
+    <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
+      <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
-      <div className="relative z-20 text-center space-y-6 sm:space-y-8 lg:space-y-10 xl:space-y-12">
-        <div className="space-y-3 sm:space-y-4 lg:space-y-6 xl:space-y-8">
-          <h1 className={`${titleClass} text-white drop-shadow-lg font-extrabold tracking-tight`}>{slide.title}</h1>
-          <div className="w-20 sm:w-24 lg:w-32 xl:w-40 h-1 sm:h-1.5 lg:h-2 bg-white/80 mx-auto rounded-full shadow-sm"></div>
-        </div>
-
-        <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl 2xl:prose-2xl prose-invert max-w-none text-center px-4 sm:px-6 lg:px-8 xl:px-12">
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="text-white/95 drop-shadow-md leading-relaxed sm:leading-loose lg:leading-loose">{children}</p>,
-              strong: ({ children }) => <strong className="font-bold text-white drop-shadow-md">{children}</strong>,
-              em: ({ children }) => <em className="text-white/90 italic drop-shadow-md">{children}</em>,
-            }}
-          >
-            {slide.content}
-          </ReactMarkdown>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-6 lg:space-x-8 xl:space-x-12 text-white/95 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 drop-shadow-sm" />
-            <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Sprint Review</span>
+      <div className="relative z-20 flex flex-col h-full overflow-hidden">
+        {/* Header with Logo */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex-1"></div>
+          <div className="flex items-center space-x-4">
+            <img 
+              src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg" 
+              alt="Command Alkon" 
+              className="h-12 w-auto"
+            />
           </div>
-          <div className="hidden sm:block w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 bg-white/80 rounded-full shadow-sm"></div>
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <Target className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 drop-shadow-sm" />
-            <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Team Presentation</span>
+        </div>
+        
+        {/* Main Content - Scrollable */}
+        <div className="flex-1 min-h-0 flex flex-col justify-center items-center p-8 text-center overflow-y-auto max-h-[calc(100vh-10rem)]">
+          <h1 className={`${titleClass} text-gray-900 font-extrabold tracking-tight mb-8`}>
+            {slide.title}
+          </h1>
+          
+          <div className="max-w-4xl mx-auto w-full">
+            <div className="prose max-w-full break-words">
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => <h1 className="text-3xl font-bold text-gray-900 mb-6">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-2xl font-semibold text-gray-800 mb-4">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xl font-medium text-gray-700 mb-3">{children}</h3>,
+                  p: ({ children }) => <p className="text-base text-gray-600 mb-3 leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">{children}</ul>,
+                  li: ({ children }) => <li className="text-base text-gray-600">{children}</li>,
+                  strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                  em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
+                }}
+              >
+                {slide.content}
+              </ReactMarkdown>
+            </div>
           </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-200 text-center text-sm text-gray-500 flex-shrink-0">
+          Generated by Sprint Review Deck Generator
         </div>
       </div>
     </div>
@@ -254,41 +268,53 @@ function SummarySlide({ slide, containerClass, titleClass, contentClass, allIssu
       {/* Enhanced overlay for better text readability */}
       <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
-      <div className="relative z-20 h-full flex flex-col">
-        <div className="text-center mb-4 sm:mb-6 lg:mb-8 flex-shrink-0">
-          <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>{slide.title}</h2>
-          <div className="w-16 sm:w-20 lg:w-24 xl:w-32 h-1 sm:h-1.5 lg:h-2 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
+      <div className="relative z-20 flex flex-col h-full overflow-hidden">
+        {/* Header with Logo */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+          <div className="flex-1"></div>
+          <div className="flex items-center space-x-4">
+            <img 
+              src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg" 
+              alt="Command Alkon" 
+              className="h-8 w-auto"
+            />
+          </div>
         </div>
-
-        <div className="flex-1 min-h-0 flex flex-col">
-          {/* Summary Content - Enhanced responsive */}
-          <div className="flex-1 min-h-0 overflow-y-auto mb-4 sm:mb-6 lg:mb-8 px-4 sm:px-6 lg:px-8">
-            <div className={`prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none ${contentClass} slide-content slide-overflow`}>
-              <ReactMarkdown
-                components={{
-                  h1: ({ children }) => <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 lg:mb-6 border-b border-gray-200 pb-2 sm:pb-3 slide-readable">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-800 mb-3 sm:mb-4 lg:mb-6 mt-4 sm:mt-6 lg:mt-8 text-ca-blue-700 slide-readable">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium text-gray-700 mb-2 sm:mb-3 lg:mb-4 mt-3 sm:mt-4 lg:mt-6 slide-readable">{children}</h3>,
-                  ul: ({ children }) => <ul className="space-y-2 sm:space-y-3 lg:space-y-4 ml-4 sm:ml-6 lg:ml-8">{children}</ul>,
-                  li: ({ children }) => (
-                    <li className="flex items-start space-x-3 sm:space-x-4">
-                      <span className="text-ca-blue-600 mt-1 font-bold text-sm sm:text-base">•</span>
-                      <span className="text-gray-800 text-sm sm:text-base lg:text-lg slide-readable">{children}</span>
-                    </li>
-                  ),
-                  p: ({ children }) => <p className="mb-3 sm:mb-4 lg:mb-6 text-gray-700 leading-relaxed sm:leading-loose text-sm sm:text-base lg:text-lg slide-readable">{children}</p>,
-                  strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
-                  em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
-                }}
-              >
-                {slide.content}
-              </ReactMarkdown>
-            </div>
+        
+        {/* Main Content */}
+        <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-6 lg:p-8 overflow-hidden">
+          <div className="flex-shrink-0 mb-4 sm:mb-6 lg:mb-8">
+            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>
+              {slide.title || "Sprint Summary"}
+            </h2>
+            <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-ca-blue-600 to-ca-indigo-600 rounded-full"></div>
           </div>
 
-          {/* Epic Breakdown Section - Enhanced responsive */}
-          <div className="border-t border-gray-200 pt-4 sm:pt-6 lg:pt-8 flex-shrink-0 px-4 sm:px-6 lg:px-8">
-            <EpicBreakdown issues={allIssues} isFullscreen={isFullscreen} />
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* Content Area - Scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-10rem)]">
+              <div className="prose max-w-full break-words">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2 sm:mb-3">{children}</h3>,
+                    p: ({ children }) => <p className={`${contentClass} text-gray-700 mb-3 sm:mb-4`}>{children}</p>,
+                    ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2">{children}</ul>,
+                    li: ({ children }) => <li className={`${contentClass} text-gray-700`}>{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                    em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
+                  }}
+                >
+                  {slide.content}
+                </ReactMarkdown>
+              </div>
+            </div>
+
+            {/* Epic Breakdown Section - Enhanced responsive */}
+            <div className="border-t border-gray-200 pt-4 sm:pt-6 lg:pt-8 flex-shrink-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
+              <EpicBreakdown issues={allIssues} isFullscreen={isFullscreen} />
+            </div>
           </div>
         </div>
       </div>
@@ -299,13 +325,27 @@ function SummarySlide({ slide, containerClass, titleClass, contentClass, allIssu
 function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIssues, isFullscreen }: any) {
   if (!sprintMetrics) {
     return (
-      <div className={`${containerClass} relative`}>
+      <div className={`${containerClass} relative overflow-hidden`}>
         {/* Enhanced overlay for better text readability */}
         <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
         
-        <div className="relative z-20 text-center space-y-4 sm:space-y-6 lg:space-y-8">
-          <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint Metrics</h2>
-          <div className="text-lg sm:text-xl text-gray-600 bg-gray-50 rounded-lg p-4">No metrics data available</div>
+        <div className="relative z-20 flex flex-col h-full overflow-hidden">
+          {/* Header with Logo */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+            <div className="flex-1"></div>
+            <div className="flex items-center space-x-4">
+              <img 
+                src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg" 
+                alt="Command Alkon" 
+                className="h-8 w-auto"
+              />
+            </div>
+          </div>
+          
+          <div className="flex-1 flex flex-col justify-center items-center p-8 text-center overflow-y-auto max-h-[calc(100vh-10rem)]">
+            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint Metrics</h2>
+            <div className="text-lg sm:text-xl text-gray-600 bg-gray-50 rounded-lg p-4">No metrics data available</div>
+          </div>
         </div>
       </div>
     )
@@ -316,100 +356,72 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
 
   const qualityScore = calculateQualityScore(sprintMetrics.qualityChecklist)
 
-  // Responsive grid classes
-  const gridClass = isFullscreen 
-    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-10" 
-    : "grid grid-cols-2 gap-2 sm:gap-3"
-  
-  // Responsive metric card classes with enhanced styling
-  const metricCardClass = isFullscreen 
-    ? "text-center p-4 sm:p-6 lg:p-8 xl:p-10 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow" 
-    : "text-center p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-  
-  // Responsive metric value classes
-  const metricValueClass = isFullscreen 
-    ? "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-2 sm:mb-3 lg:mb-4" 
-    : "text-lg sm:text-xl font-bold mb-1"
-  
-  // Responsive metric label classes
-  const metricLabelClass = isFullscreen 
-    ? "text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-600 font-medium" 
-    : "text-xs sm:text-sm text-gray-600 font-medium"
-
   return (
-    <div className={`${containerClass} relative`}>
+    <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
       <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
-      <div className="relative z-20 space-y-4 sm:space-y-6 lg:space-y-8">
-        <div className="text-center">
-          <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint {sprintMetrics.sprintNumber} Metrics</h2>
-          <div className="w-16 sm:w-20 lg:w-24 xl:w-32 h-1 sm:h-1.5 lg:h-2 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div className={gridClass}>
-          <div className={metricCardClass}>
-            <div className={`${metricValueClass} text-ca-blue-600`}>{completionRate}%</div>
-            <div className={metricLabelClass}>Completion Rate</div>
-            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
-              {completionRate >= 80 ? (
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-green-500 drop-shadow-sm" />
-              ) : (
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-yellow-500 drop-shadow-sm" />
-              )}
-            </div>
-          </div>
-
-          <div className={metricCardClass}>
-            <div className={`${metricValueClass} text-ca-orange-600`}>{sprintMetrics.completedTotalPoints}</div>
-            <div className={metricLabelClass}>Story Points</div>
-            <div className="text-sm sm:text-base lg:text-lg text-gray-500 mt-2 sm:mt-3 font-medium">of {sprintMetrics.estimatedPoints} planned</div>
-          </div>
-
-          <div className={metricCardClass}>
-            <div className={`${metricValueClass} text-ca-indigo-600`}>{sprintMetrics.testCoverage}%</div>
-            <div className={metricLabelClass}>Test Coverage</div>
-            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
-              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-ca-indigo-500 drop-shadow-sm" />
-            </div>
-          </div>
-
-          <div className={metricCardClass}>
-            <div
-              className={`${metricValueClass} ${qualityScore >= 80 ? "text-green-600" : qualityScore >= 60 ? "text-yellow-600" : "text-red-600"}`}
-            >
-              {qualityScore}%
-            </div>
-            <div className={metricLabelClass}>Quality Score</div>
-            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-gray-500 drop-shadow-sm" />
-            </div>
+      <div className="relative z-20 flex flex-col h-full overflow-hidden">
+        {/* Header with Logo */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+          <div className="flex-1"></div>
+          <div className="flex items-center space-x-4">
+            <img 
+              src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg" 
+              alt="Command Alkon" 
+              className="h-8 w-auto"
+            />
           </div>
         </div>
+        
+        {/* Main Content */}
+        <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-6 lg:p-8 overflow-hidden">
+          <div className="flex-shrink-0 mb-4 sm:mb-6 lg:mb-8 text-center">
+            <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint Metrics & Performance</h2>
+            <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-ca-blue-600 to-ca-indigo-600 rounded-full mx-auto"></div>
+          </div>
 
-        {/* Quality Standards Summary */}
-        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 lg:p-6 xl:p-8 border border-gray-200">
-          <h3 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold mb-3 sm:mb-4 lg:mb-6 text-center text-gray-900">Quality Standards Achievement</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
-            {Object.entries(sprintMetrics.qualityChecklist)
-              .slice(0, 10)
-              .map(([key, value]) => (
-                <div key={key} className="text-center bg-white rounded-lg p-2 sm:p-3 lg:p-4 shadow-sm">
-                  <div className="mb-2 sm:mb-3">
-                    {value === "yes" ? (
-                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-green-500 mx-auto drop-shadow-sm" />
-                    ) : value === "partial" ? (
-                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-yellow-500 mx-auto drop-shadow-sm" />
-                    ) : value === "na" ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-gray-300 rounded-full mx-auto"></div>
-                    ) : (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-red-200 rounded-full mx-auto"></div>
-                    )}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 flex-shrink-0">
+              <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-blue-50 to-ca-indigo-50 rounded-lg border border-ca-blue-200">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-blue-600 mb-2">{sprintMetrics.plannedItems}</div>
+                <div className="text-sm sm:text-base text-ca-blue-700 font-medium">Planned Items</div>
+              </div>
+              <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">{sprintMetrics.completedTotalPoints}</div>
+                <div className="text-sm sm:text-base text-green-700 font-medium">Completed Points</div>
+              </div>
+              <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-orange-50 to-amber-50 rounded-lg border border-ca-orange-200">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-orange-600 mb-2">{sprintMetrics.testCoverage}%</div>
+                <div className="text-sm sm:text-base text-ca-orange-700 font-medium">Test Coverage</div>
+              </div>
+              <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-indigo-50 to-purple-50 rounded-lg border border-ca-indigo-200">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-indigo-600 mb-2">{qualityScore}%</div>
+                <div className="text-sm sm:text-base text-ca-indigo-700 font-medium">Quality Score</div>
+              </div>
+            </div>
+
+            {/* Quality Checklist - Scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-10rem)]">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Quality Standards Achievement</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                {Object.entries(sprintMetrics.qualityChecklist).map(([key, value]) => (
+                  <div key={key} className="text-center p-3 sm:p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <div className="mb-2">
+                      {value === "yes" ? (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-green-200 rounded-full mx-auto"></div>
+                      ) : value === "partial" ? (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-yellow-200 rounded-full mx-auto"></div>
+                      ) : (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-red-200 rounded-full mx-auto"></div>
+                      )}
+                    </div>
+                    <div className="text-xs sm:text-sm lg:text-base text-gray-600 capitalize font-medium break-words">{key.replace(/([A-Z])/g, " $1").trim()}</div>
                   </div>
-                  <div className="text-xs sm:text-sm lg:text-base text-gray-600 capitalize font-medium">{key.replace(/([A-Z])/g, " $1").trim()}</div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -444,6 +456,22 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     return { hasContent: true, processedContent: processed, sections };
   };
 
+  // Enhanced demo summary processing for 4-line format
+  const processDemoSummary = (content: string) => {
+    if (!content || content.trim() === '') {
+      return { lines: [], hasContent: false };
+    }
+    
+    const lines = content
+      .trim()
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .slice(0, 4); // Ensure max 4 lines
+    
+    return { lines, hasContent: lines.length > 0 };
+  };
+
   // Handle both old string format and new structured format
   let accomplishments, businessValue, userImpact;
   
@@ -468,22 +496,29 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     }
 
     const issue = issues.find(i => i.id === slide.storyId) || issues[0]; // Use specific story or fallback
+    
+    // Enhanced epic information handling
+    const epicKey = issue.epicKey || (issue.epicName && /^[A-Z]+-\d+$/.test(issue.epicName) ? issue.epicName : undefined);
+    const epicName = issue.epicName || issue.epicKey || 'No Epic';
+    const epicDisplay = epicKey && epicName && epicKey !== epicName ? `${epicKey}: ${epicName}` : epicName;
+    
     return {
       assignee: issue.assignee || 'Unassigned',
       issueKey: issue.key || 'N/A',
       storyPoints: issue.storyPoints || 0,
       type: issue.issueType || 'Story',
-      epic: issue.epicName || 'No Epic',
+      epic: epicDisplay,
       summary: issue.summary || 'No summary available'
     };
   };
 
   const issueDetails = getIssueDetails();
+  const demoSummary = processDemoSummary(typeof slide.content === 'string' ? slide.content : '');
 
   // Enhanced responsive typography classes
   const titleClass = isFullscreen 
     ? "text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-3 sm:mb-4 lg:mb-6"
-    : "text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 sm:mb-3 lg:mb-4";
+    : "text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 sm:mb-3";
 
   const subtitleClass = isFullscreen
     ? "text-sm sm:text-base lg:text-lg xl:text-xl font-semibold text-white mb-2 sm:mb-3 lg:mb-4"
@@ -501,11 +536,24 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     ? "text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed"
     : "text-xs sm:text-sm lg:text-base leading-relaxed";
 
+  const demoLineClass = isFullscreen
+    ? "text-base sm:text-lg lg:text-xl xl:text-2xl font-medium text-white leading-tight"
+    : "text-sm sm:text-base lg:text-lg font-medium text-white leading-tight";
+
   return (
     <div className={`${containerClass} relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden`}>
       
+      {/* Company Logo - positioned in top right corner for demo slides */}
+      <div className="absolute top-4 right-4 z-30">
+        <img 
+          src="/company-logos/CommandAlkon_Logo_Primary_White.svg" 
+          alt="Command Alkon" 
+          className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-90 hover:opacity-100 transition-opacity`}
+        />
+      </div>
+      
       {/* Content Container - Enhanced responsive padding */}
-      <div className={`relative z-10 flex flex-col h-full ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 xl:p-10' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <div className={`relative z-10 flex flex-col h-full ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 xl:p-10' : 'p-4 sm:p-6 lg:p-8'} overflow-hidden`}>
         {/* Header */}
         <div className="flex-shrink-0 mb-4 sm:mb-6 lg:mb-8">
           <h1 className={titleClass}>
@@ -514,194 +562,108 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
           <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"></div>
         </div>
 
-        {/* Main Content Area - Enhanced responsive layout */}
-        <div className={`flex-1 min-h-0 ${isFullscreen ? 'flex flex-row space-x-6 lg:space-x-8 xl:space-x-10' : 'grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8'}`}>
-          {/* Issue Details Card - Enhanced responsive */}
-          {issueDetails && (
-            <div className={`bg-black/50 backdrop-blur-lg rounded-xl border border-white/40 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 w-80 lg:w-96 flex-shrink-0' : 'p-3 sm:p-4 lg:p-6'}`}>
-              <h3 className={`${subtitleClass} flex items-center`}>
-                <User className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-blue-400" />
-                Issue Details
+        {/* Main Content Area */}
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 lg:gap-8">
+          
+          {/* Demo Summary Section - Enhanced for 4-line format */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex-shrink-0 mb-4">
+              <h2 className={subtitleClass}>
+                {issueDetails?.issueKey}: {issueDetails?.summary}
+              </h2>
+            </div>
+            
+            {/* Demo Summary Content */}
+            <div className="flex-1 min-h-0 flex flex-col justify-center">
+              {demoSummary.hasContent ? (
+                <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+                  {demoSummary.lines.map((line, index) => (
+                    <div key={index} className="flex items-start gap-4">
+                      <div className={`flex-shrink-0 w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm sm:text-base lg:text-lg`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className={demoLineClass}>
+                          {line}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className={`${contentClass} text-gray-300`}>
+                    No demo summary available
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Issue Details Sidebar */}
+          <div className="lg:w-80 flex-shrink-0">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 border border-white/20">
+              <h3 className={`${cardTitleClass} text-white mb-4`}>
+                Story Details
               </h3>
-              <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 ${contentClass}`}>
+              
+              <div className="space-y-3">
                 <div>
-                  <span className="text-gray-300 text-xs sm:text-sm">Assignee:</span>
-                  <p className="text-white font-medium slide-content slide-overflow">{issueDetails.assignee}</p>
+                  <span className={`${contentClass} text-gray-300 font-medium`}>Assignee:</span>
+                  <p className={`${contentClass} text-white`}>{issueDetails?.assignee}</p>
                 </div>
+                
                 <div>
-                  <span className="text-gray-300 text-xs sm:text-sm">Issue Key:</span>
-                  <p className="text-white font-medium">{issueDetails.issueKey}</p>
+                  <span className={`${contentClass} text-gray-300 font-medium`}>Story Points:</span>
+                  <p className={`${contentClass} text-white`}>{issueDetails?.storyPoints || 'Not estimated'}</p>
                 </div>
+                
                 <div>
-                  <span className="text-gray-300 text-xs sm:text-sm">Story Points:</span>
-                  <p className="text-white font-medium">{issueDetails.storyPoints}</p>
+                  <span className={`${contentClass} text-gray-300 font-medium`}>Type:</span>
+                  <p className={`${contentClass} text-white`}>{issueDetails?.type}</p>
                 </div>
+                
                 <div>
-                  <span className="text-gray-300 text-xs sm:text-sm">Type:</span>
-                  <p className="text-white font-medium">{issueDetails.type}</p>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-300 text-xs sm:text-sm">Epic:</span>
-                  <p className="text-white font-medium slide-content slide-overflow">{issueDetails.epic}</p>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-300 text-xs sm:text-sm">Summary:</span>
-                  <p className="text-white font-medium leading-tight slide-content slide-overflow">{issueDetails.summary}</p>
+                  <span className={`${contentClass} text-gray-300 font-medium`}>Epic:</span>
+                  <p className={`${contentClass} text-white`}>{issueDetails?.epic}</p>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Content Cards - Enhanced responsive layout */}
-          <div className={`${isFullscreen ? 'flex flex-row space-x-6 lg:space-x-8 xl:space-x-10 flex-1' : 'flex flex-col space-y-4 sm:space-y-5 lg:space-y-6'}`}>
-            {/* Accomplishments - Enhanced responsive */}
-            {accomplishments.hasContent && (
-              <div className={`bg-gradient-to-br from-blue-600/50 to-cyan-600/50 backdrop-blur-lg rounded-xl border border-blue-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
-                <h3 className={`${cardTitleClass} flex items-center`}>
-                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-green-400" />
-                  Accomplishments
-                </h3>
-                <div className="h-full overflow-y-auto">
-                  {accomplishments.sections.length > 0 ? (
-                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                      {accomplishments.sections.slice(0, 4).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
-                          <h4 className={`${contentClass} font-semibold text-blue-200 mb-2 sm:mb-3`}>
-                            {section.title}
-                          </h4>
-                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                            <div 
-                              dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 300) + (section.content.length > 300 ? '...' : '')) 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: marked(accomplishments.processedContent) 
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Business Value - Enhanced responsive */}
-            {businessValue.hasContent && (
-              <div className={`bg-gradient-to-br from-emerald-600/50 to-teal-600/50 backdrop-blur-lg rounded-xl border border-emerald-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
-                <h3 className={`${cardTitleClass} flex items-center`}>
-                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-emerald-400" />
-                  Business Value
-                </h3>
-                <div className="h-full overflow-y-auto">
-                  {businessValue.sections.length > 0 ? (
-                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                      {businessValue.sections.slice(0, 3).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
-                          <h4 className={`${contentClass} font-semibold text-emerald-200 mb-2 sm:mb-3`}>
-                            {section.title}
-                          </h4>
-                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                            <div 
-                              dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 250) + (section.content.length > 250 ? '...' : '')) 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: marked(businessValue.processedContent) 
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* User Impact - Enhanced responsive */}
-            {userImpact.hasContent && (
-              <div className={`bg-gradient-to-br from-purple-600/50 to-pink-600/50 backdrop-blur-lg rounded-xl border border-purple-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
-                <h3 className={`${cardTitleClass} flex items-center`}>
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-purple-400" />
-                  User Impact
-                </h3>
-                <div className="h-full overflow-y-auto">
-                  {userImpact.sections.length > 0 ? (
-                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                      {userImpact.sections.slice(0, 3).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
-                          <h4 className={`${contentClass} font-semibold text-purple-200 mb-2 sm:mb-3`}>
-                            {section.title}
-                          </h4>
-                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                            <div 
-                              dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 250) + (section.content.length > 250 ? '...' : '')) 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: marked(userImpact.processedContent) 
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 function CustomSlide({ slide, containerClass, titleClass }: any) {
   return (
-    <div className={`${containerClass} relative`}>
+    <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
       <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
-      <div className="relative z-20 h-full flex flex-col">
+      <div className="relative z-20 h-full flex flex-col overflow-hidden">
         <div className="text-center mb-3 sm:mb-4 flex-shrink-0">
           <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>{slide.title}</h2>
           <div className="w-12 sm:w-14 lg:w-16 h-1 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
         </div>
 
-        <div className="flex-1 min-h-0 flex items-center justify-center p-4">
+        <div className="flex-1 min-h-0 flex items-center justify-center p-4 overflow-hidden">
           {slide.corporateSlideUrl ? (
-            <div className="max-w-full max-h-full">
+            <div className="max-w-full max-h-full w-full h-full flex items-center justify-center">
               <img
                 src={slide.corporateSlideUrl}
                 alt={slide.title}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-sm"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   target.nextElementSibling!.classList.remove('hidden');
                 }}
               />
-              <div className="hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm">
+              <div className="hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-[90vh] overflow-y-auto">
                 <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Image Loading Error</div>
-                <div className="text-xs text-gray-600 leading-relaxed text-center">
+                <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
                   Unable to load the uploaded image.
                   <br />
                   <span className="text-xs text-gray-500 mt-2 block">
@@ -711,10 +673,10 @@ function CustomSlide({ slide, containerClass, titleClass }: any) {
               </div>
             </div>
           ) : (
-            <div className="max-w-full max-h-full">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm">
+            <div className="max-w-full max-h-full w-full h-full flex items-center justify-center">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-[90vh] overflow-y-auto">
                 <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Custom Slide Content</div>
-                <div className="text-xs text-gray-600 leading-relaxed text-center">
+                <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
                   This slide would display the uploaded image content from the Additional Slides section.
                   <br />
                   <span className="text-xs text-gray-500 mt-2 block">
@@ -732,36 +694,38 @@ function CustomSlide({ slide, containerClass, titleClass }: any) {
 
 function DefaultSlide({ slide, containerClass, titleClass, contentClass }: any) {
   return (
-    <div className={`${containerClass} relative`}>
+    <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
       <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
-      <div className="relative z-20 space-y-4 sm:space-y-6 lg:space-y-8">
-        <div className="text-center">
+      <div className="relative z-20 space-y-4 sm:space-y-6 lg:space-y-8 overflow-hidden">
+        <div className="text-center flex-shrink-0">
           <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>{slide.title}</h2>
           <div className="w-12 sm:w-14 lg:w-16 h-1 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
         </div>
 
-        <div className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none ${contentClass}`}>
-          <ReactMarkdown
-            components={{
-              h1: ({ children }) => <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-5 lg:mb-6 border-b border-gray-200 pb-2">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-3 sm:mb-3 lg:mb-4 mt-6 sm:mt-7 lg:mt-8 text-ca-blue-700">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-lg sm:text-lg lg:text-xl font-medium text-gray-700 mb-2 sm:mb-2 lg:mb-3 mt-4 sm:mt-5 lg:mt-6">{children}</h3>,
-              ul: ({ children }) => <ul className="space-y-1 sm:space-y-1.5 lg:space-y-2 ml-4 sm:ml-5 lg:ml-6">{children}</ul>,
-              li: ({ children }) => (
-                <li className="flex items-start space-x-2">
-                  <span className="text-ca-blue-600 mt-1 font-bold">•</span>
-                  <span className="text-gray-800">{children}</span>
-                </li>
-              ),
-              p: ({ children }) => <p className="mb-3 sm:mb-3 lg:mb-4 text-gray-700 leading-relaxed">{children}</p>,
-              strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
-              em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
-            }}
-          >
-            {slide.content}
-          </ReactMarkdown>
+        <div className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none ${contentClass} overflow-y-auto max-h-[calc(100vh-10rem)]`}>
+          <div className="prose max-w-full break-words">
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-5 lg:mb-6 border-b border-gray-200 pb-2 break-words">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-3 sm:mb-3 lg:mb-4 mt-6 sm:mt-7 lg:mt-8 text-ca-blue-700 break-words">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-lg sm:text-lg lg:text-xl font-medium text-gray-700 mb-2 sm:mb-2 lg:mb-3 mt-4 sm:mt-5 lg:mt-6 break-words">{children}</h3>,
+                ul: ({ children }) => <ul className="space-y-1 sm:space-y-1.5 lg:space-y-2 ml-4 sm:ml-5 lg:ml-6">{children}</ul>,
+                li: ({ children }) => (
+                  <li className="flex items-start space-x-2">
+                    <span className="text-ca-blue-600 mt-1 font-bold">•</span>
+                    <span className="text-gray-800 break-words">{children}</span>
+                  </li>
+                ),
+                p: ({ children }) => <p className="mb-3 sm:mb-3 lg:mb-4 text-gray-700 leading-relaxed break-words">{children}</p>,
+                strong: ({ children }) => <strong className="font-bold text-gray-900 break-words">{children}</strong>,
+                em: ({ children }) => <em className="text-gray-600 italic break-words">{children}</em>,
+              }}
+            >
+              {slide.content}
+            </ReactMarkdown>
+          </div>
         </div>
       </div>
     </div>
@@ -794,56 +758,32 @@ function calculateQualityScore(checklist: Record<string, string>): number {
 }
 
 function CorporateSlide({ slide, containerClass, isFullscreen }: any) {
-  const [imageError, setImageError] = useState(false)
-
-  if (!slide.corporateSlideUrl) {
-    return (
-      <div className={containerClass}>
-        <div className="text-center text-gray-500">No corporate slide content available</div>
-      </div>
-    )
-  }
-
-  if (imageError) {
-    return (
-      <div className={containerClass}>
-        <div className="text-center">
-          <div className="text-gray-500 mb-4">Failed to load image</div>
-          <div className="text-sm text-gray-400">URL: {slide.corporateSlideUrl}</div>
-          <div className="text-sm text-gray-400">Title: {slide.title}</div>
-          {/* Show a fallback for demo separator */}
-          {slide.title === "Demo Separator" && (
-            <div className="mt-8 p-8 bg-gray-100 rounded-lg">
-              <div className="text-2xl font-bold text-gray-700 mb-4">Demo Stories</div>
-              <div className="text-gray-600">This section contains the demo stories for this sprint review.</div>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className={`${containerClass} p-0`}>
-      <div className="relative w-full h-full">
-        <Image
+    <div className={`${containerClass} relative overflow-hidden`}>
+      {/* Corporate slide image */}
+      {slide.corporateSlideUrl && (
+        <img
           src={slide.corporateSlideUrl}
-          alt={slide.title || "Corporate slide"}
-          fill
-          className="object-contain"
-          priority
-          sizes="100vw"
-          onError={() => {
-            console.error("Failed to load corporate slide:", slide.corporateSlideUrl)
-            setImageError(true)
-          }}
-          onLoad={() => {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Successfully loaded corporate slide:", slide.corporateSlideUrl)
-            }
-          }}
+          alt={slide.title || "Corporate Slide"}
+          className="w-full h-full object-cover max-h-[90vh]"
+        />
+      )}
+      
+      {/* Company Logo overlay - positioned in bottom right corner */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <img 
+          src="/company-logos/CommandAlkon_Logo_Primary_White.svg" 
+          alt="Command Alkon" 
+          className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-80 hover:opacity-100 transition-opacity drop-shadow-lg`}
         />
       </div>
+      
+      {/* Optional title overlay */}
+      {slide.title && (
+        <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 max-w-[calc(100%-2rem)]">
+          <h3 className="text-white text-sm font-medium break-words">{slide.title}</h3>
+        </div>
+      )}
     </div>
   )
 }
@@ -950,30 +890,33 @@ function testEpicBreakdown() {
 
 // Epic breakdown component
 function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen?: boolean }) {
-  // Validate input
-  if (!Array.isArray(issues)) {
-    return (
-      <div className="text-center text-gray-600 py-4">
-        <div className="text-sm sm:text-base">Invalid issues data provided</div>
-      </div>
-    );
-  }
-
-  // Filter out invalid issues
+  // Filter out invalid issues and add debugging
   const validIssues = issues.filter(issue => 
     issue && 
-    typeof issue === 'object' && 
     issue.id && 
     issue.key && 
     issue.summary && 
-    issue.status && 
     issue.issueType
   );
 
-  // Group issues by epic
+  // Debug logging for epic information
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 EpicBreakdown - Issues with epic info:', validIssues.map(issue => ({
+      key: issue.key,
+      epicKey: issue.epicKey,
+      epicName: issue.epicName,
+      hasEpic: !!(issue.epicKey || issue.epicName)
+    })));
+  }
+
+  // Group issues by epic with improved logic
   const epicGroups = validIssues.reduce((groups: EpicGroup[], issue) => {
+    // Determine epic information with fallbacks
+    const epicKey = issue.epicKey || (issue.epicName && /^[A-Z]+-\d+$/.test(issue.epicName) ? issue.epicName : undefined);
+    const epicName = issue.epicName || issue.epicKey || 'No Epic';
+    
     // Handle issues without epic or with invalid epic data
-    if (!issue.epicKey || !issue.epicName || issue.epicKey.trim() === '' || issue.epicName.trim() === '') {
+    if (!epicKey && !issue.epicName) {
       // Handle issues without epic
       const noEpicGroup = groups.find(g => g.epicKey === 'no-epic');
       if (noEpicGroup) {
@@ -994,7 +937,9 @@ function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen
         });
       }
     } else {
-      const existingGroup = groups.find(g => g.epicKey === issue.epicKey);
+      // Use epicKey if available, otherwise use epicName as the key
+      const groupKey = epicKey || `name-${epicName}`;
+      const existingGroup = groups.find(g => g.epicKey === groupKey);
       if (existingGroup) {
         existingGroup.issues.push(issue);
         existingGroup.totalStoryPoints += issue.storyPoints || 0;
@@ -1003,8 +948,8 @@ function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen
         }
       } else {
         groups.push({
-          epicKey: issue.epicKey,
-          epicName: issue.epicName,
+          epicKey: groupKey,
+          epicName: epicName,
           epicColor: issue.epicColor || '#3b82f6',
           issues: [issue],
           totalStoryPoints: issue.storyPoints || 0,
@@ -1097,10 +1042,10 @@ function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen
         {epicGroups.slice(0, 4).map((group) => (
           <div 
             key={group.epicKey}
-            className="bg-white rounded p-2 border border-gray-200 shadow-sm"
+            className="bg-white rounded p-2 border border-gray-200 shadow-sm overflow-hidden"
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 min-w-0 flex-1">
                 <div 
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: group.epicColor }}
@@ -1109,7 +1054,7 @@ function EpicBreakdown({ issues, isFullscreen }: { issues: Issue[]; isFullscreen
                   {group.epicName}
                 </h4>
               </div>
-              <div className="text-xs text-ca-blue-600 font-medium bg-ca-blue-50 px-1 py-0.5 rounded">
+              <div className="text-xs text-ca-blue-600 font-medium bg-ca-blue-50 px-1 py-0.5 rounded flex-shrink-0">
                 {group.issues.length}
               </div>
             </div>

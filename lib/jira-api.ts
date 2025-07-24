@@ -13,6 +13,8 @@ import {
   type SafeJiraSprint,
   type SafeJiraIssue,
   type SafeJiraUser,
+  JIRA_FIELDS,
+  getAllJiraFields,
 } from "./jira-types"
 
 export interface JiraProjectsResult {
@@ -358,17 +360,7 @@ export async function fetchJiraSprintIssues(sprintId: number): Promise<SafeJiraI
         body: JSON.stringify({
           jql,
           maxResults: 1000,
-          fields: [
-            "summary",
-            "description",
-            "status",
-            "assignee",
-            "issuetype",
-            "parent",
-            "customfield_10127", // Story Points
-            "customfield_10011", // Epic or Parent Name
-            "customfield_10000", // Release Notes
-          ],
+          fields: getAllJiraFields(),
         }),
       },
       `fetch_sprint_issues_${sprintId}`
@@ -378,25 +370,7 @@ export async function fetchJiraSprintIssues(sprintId: number): Promise<SafeJiraI
       throw new Error("Invalid response format from JIRA search API")
     }
 
-    const safeIssues = data.issues.map((issue) => {
-      const safeIssue = extractSafeIssue(issue)
-      return {
-        id: safeIssue.id,
-        key: safeIssue.key,
-        summary: safeIssue.summary,
-        description: safeIssue.description,
-        status: safeIssue.status,
-        assignee: safeIssue.assignee,
-        storyPoints: safeIssue.storyPoints,
-        issueType: safeIssue.issueType,
-        isSubtask: safeIssue.isSubtask,
-        parentKey: safeIssue.parentKey,
-        epicKey: safeIssue.epicKey,
-        epicName: safeIssue.epicName,
-        epicColor: safeIssue.epicColor,
-        releaseNotes: safeIssue.releaseNotes,
-      }
-    })
+    const safeIssues = data.issues.map((issue) => extractSafeIssue(issue))
 
     console.log(`✅ Found ${safeIssues.length} issues for sprint ${sprintId}`)
     return freezeInDev(safeIssues)
@@ -427,17 +401,7 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
         body: JSON.stringify({
           jql,
           maxResults: 1000,
-          fields: [
-            "summary",
-            "description",
-            "status",
-            "assignee",
-            "issuetype",
-            "parent",
-            "customfield_10127", // Story Points
-            "customfield_10011", // Epic or Parent Name
-            "customfield_10000", // Release Notes
-          ],
+          fields: getAllJiraFields(),
         }),
       },
       `fetch_jql_issues_${Buffer.from(jql).toString('base64').slice(0, 20)}`
@@ -449,22 +413,22 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
 
     const safeIssues = data.issues.map((issue) => {
       const safeIssue = extractSafeIssue(issue)
-      return {
-        id: safeIssue.id,
-        key: safeIssue.key,
-        summary: safeIssue.summary,
-        description: safeIssue.description,
-        status: safeIssue.status,
-        assignee: safeIssue.assignee,
-        storyPoints: safeIssue.storyPoints,
-        issueType: safeIssue.issueType,
-        isSubtask: safeIssue.isSubtask,
-        parentKey: safeIssue.parentKey,
-        epicKey: safeIssue.epicKey,
-        epicName: safeIssue.epicName,
-        epicColor: safeIssue.epicColor,
-        releaseNotes: safeIssue.releaseNotes,
+      
+      // Debug logging for epic information
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔍 Epic debug for ${issue.key}:`, {
+          epicKey: safeIssue.epicKey,
+          epicName: safeIssue.epicName,
+          epicColor: safeIssue.epicColor,
+          rawEpicField: issue.fields.epic,
+          rawEpicParentName: issue.fields[JIRA_FIELDS.EPIC_PARENT_NAME],
+          rawEpicLink: issue.fields[JIRA_FIELDS.EPIC_LINK],
+          rawEpicName: issue.fields[JIRA_FIELDS.EPIC_NAME],
+          parent: issue.fields.parent
+        });
       }
+      
+      return safeIssue;
     })
 
     console.log(`✅ Found ${safeIssues.length} issues with JQL query`)
@@ -475,6 +439,114 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
       throw new Error(`Failed to fetch JIRA issues by JQL: ${error.message}`)
     }
     throw new Error("Unknown error occurred while fetching JIRA issues by JQL")
+  }
+}
+
+// 🚀 New: Utility function to help identify JIRA field mappings
+export async function analyzeJiraFields(sprintId: number): Promise<any> {
+  try {
+    console.log(`🔍 Analyzing JIRA fields for sprint ${sprintId}...`)
+    validateEnv()
+
+    if (!sprintId || isNaN(sprintId)) {
+      throw new Error("Valid sprint ID is required")
+    }
+
+    const jql = `sprint = ${sprintId}`
+    const url = `${env.JIRA_BASE_URL}/rest/api/3/search`
+
+    // Request all fields to analyze what's available
+    const data = await optimizedFetch(
+      url,
+      {
+        method: "POST",
+        headers: getJiraHeaders(),
+        body: JSON.stringify({
+          jql,
+          maxResults: 10, // Just get a few issues for analysis
+          fields: ["*all"], // Request all fields
+        }),
+      },
+      `analyze_fields_${sprintId}`
+    )
+
+    if (!isValidJiraSearchResponse(data)) {
+      throw new Error("Invalid response format from JIRA search API")
+    }
+
+    // Analyze multiple issues to get a better picture
+    const fieldAnalysis = {
+      totalIssues: data.issues.length,
+      sampleIssues: data.issues.map((issue: any) => ({
+        key: issue.key,
+        summary: issue.fields.summary,
+        issueType: issue.fields.issuetype?.name,
+        availableFields: Object.keys(issue.fields),
+        customFields: {} as Record<string, { value: any; type: string }>,
+        potentialEpicFields: {} as Record<string, { value: any; type: string }>,
+      })),
+      epicRelatedFields: {} as Record<string, { value: any; type: string }>,
+      allCustomFields: {} as Record<string, { value: any; type: string; count: number }>,
+    };
+
+    // Analyze each issue
+    data.issues.forEach((issue: any) => {
+      const issueAnalysis = fieldAnalysis.sampleIssues.find(s => s.key === issue.key);
+      if (!issueAnalysis) return;
+
+      // Look for epic-related fields and custom fields
+      Object.entries(issue.fields).forEach(([fieldName, fieldValue]) => {
+        // Track all custom fields
+        if (fieldName.startsWith('customfield_')) {
+          if (!fieldAnalysis.allCustomFields[fieldName]) {
+            fieldAnalysis.allCustomFields[fieldName] = {
+              value: fieldValue,
+              type: typeof fieldValue,
+              count: 0
+            };
+          }
+          fieldAnalysis.allCustomFields[fieldName].count++;
+          
+          issueAnalysis.customFields[fieldName] = {
+            value: fieldValue,
+            type: typeof fieldValue
+          };
+        }
+
+        // Look for epic-related fields
+        if (fieldName.toLowerCase().includes('epic') || 
+            fieldName.toLowerCase().includes('parent') ||
+            fieldName.toLowerCase().includes('theme') ||
+            fieldName.toLowerCase().includes('initiative')) {
+          fieldAnalysis.epicRelatedFields[fieldName] = {
+            value: fieldValue,
+            type: typeof fieldValue
+          };
+          issueAnalysis.potentialEpicFields[fieldName] = {
+            value: fieldValue,
+            type: typeof fieldValue
+          };
+        }
+
+        // Check for fields that might contain epic-like information
+        if (typeof fieldValue === 'string' && fieldValue.length > 0) {
+          // Look for patterns that might indicate epic information
+          if (/^[A-Z]+-\d+$/.test(fieldValue) || // Looks like a key
+              fieldValue.length > 10 && fieldValue.length < 100) { // Reasonable length for epic name
+            issueAnalysis.potentialEpicFields[fieldName] = {
+              value: fieldValue,
+              type: typeof fieldValue
+            };
+          }
+        }
+      });
+    });
+
+    console.log(`✅ Field analysis completed for ${data.issues.length} issues`);
+    return fieldAnalysis;
+  } catch (error) {
+    console.error("❌ Failed to analyze JIRA fields:", error);
+    throw error;
   }
 }
 

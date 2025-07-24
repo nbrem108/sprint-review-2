@@ -17,10 +17,14 @@ import {
   Calendar,
   Target,
   BarChart3,
+  Trash2,
+  RefreshCw,
 } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
 import { PresentationMode } from "@/components/presentation/presentation-mode"
+import { getEpicBreakdown, type EpicBreakdown } from "@/lib/utils"
+import { calculateQualityScore } from "@/lib/utils"
 
 interface PresentationSlide {
   id: string
@@ -47,13 +51,15 @@ interface GeneratedPresentation {
 }
 
 export function PresentationTab() {
-  const { state } = useSprintContext()
+  const { state, dispatch } = useSprintContext()
   const { toast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [presentation, setPresentation] = useState<GeneratedPresentation | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+
+  // Use the persisted presentation from context
+  const presentation = state.generatedPresentation
 
   // Check if we have enough data to generate presentation
   const canGenerate = state.selectedSprint && state.issues.length > 0
@@ -125,37 +131,35 @@ export function PresentationTab() {
 
       // Sprint Metrics slide
       if (hasMetrics && state.metrics) {
-        const qualityScore = calculateQualityScore(state.metrics.qualityChecklist)
+        const epicBreakdown: EpicBreakdown[] = getEpicBreakdown(state.issues);
+        const epicBreakdownContent = epicBreakdown.map((epic: EpicBreakdown) => 
+          `### ${epic.name}
+- Stories: ${epic.completed}/${epic.total} (${epic.percent}% complete)
+- Points: ${epic.completedPoints}/${epic.totalPoints} (${epic.percentPoints}% complete)`
+        ).join('\n\n');
+
         slides.push({
           id: `slide-${slideOrder}`,
-          title: "Sprint Metrics & Performance",
-          content: `# Sprint Metrics & Performance
+          title: "Sprint Metrics & Epic Progress",
+          content: `# Sprint Metrics
 
-## Planning Metrics
-- **Sprint Number:** ${state.metrics.sprintNumber}
-- **Planned Items:** ${state.metrics.plannedItems}
-- **Estimated Points:** ${state.metrics.estimatedPoints}
-- **Completed Points:** ${state.metrics.completedTotalPoints}
-- **Test Coverage:** ${state.metrics.testCoverage}%
-
-## Quality Score: ${qualityScore}%
-
-## Quality Standards Achievement
+## Quality Metrics
 ${Object.entries(state.metrics.qualityChecklist)
-  .map(([key, value]) => `- **${formatQualityKey(key)}:** ${formatQualityValue(value)}`)
+  .map(([key, value]) => `- ${key}: ${value === "yes" ? "✅" : value === "no" ? "❌" : value === "partial" ? "⚠️" : "ℹ️"}`)
   .join("\n")}
 
-## Performance Summary
-${
-  qualityScore >= 80
-    ? "✅ Excellent sprint quality achieved"
-    : qualityScore >= 60
-      ? "⚠️ Good sprint quality with room for improvement"
-      : "❌ Sprint quality needs attention"
-}`,
+## Epic Progress
+${epicBreakdownContent}
+
+## Overall Progress
+- Story Points: ${state.metrics.completedTotalPoints}/${state.metrics.estimatedPoints} (${Math.round((state.metrics.completedTotalPoints / state.metrics.estimatedPoints) * 100)}%)
+- Quality Score: ${calculateQualityScore(state.metrics.qualityChecklist)}%
+${calculateQualityScore(state.metrics.qualityChecklist) >= 80 
+  ? "✅ Sprint quality meets standards" 
+  : "❌ Sprint quality needs attention"}`,
           type: "metrics",
           order: slideOrder++,
-        })
+        });
       }
 
       // Demo Stories slides
@@ -180,7 +184,7 @@ ${state.demoStories
       : ""
   })
   .join("\n\n")}`,
-          type: "demo-story",
+          type: "summary",
           order: slideOrder++,
         })
 
@@ -298,7 +302,7 @@ ${state.demoStories
         },
       }
 
-      setPresentation(generatedPresentation)
+      dispatch({ type: "SET_GENERATED_PRESENTATION", payload: generatedPresentation })
       setIsGenerating(false)
 
       toast({
@@ -320,31 +324,33 @@ ${state.demoStories
     if (!presentation) return
 
     setIsExporting(true)
-
     try {
       // Simulate PDF export
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-
-      // In a real implementation, this would call a PDF generation API
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      console.log("Exporting PDF...")
       toast({
-        title: "PDF Export Complete",
-        description: "Presentation has been exported to PDF successfully.",
+        title: "PDF Export",
+        description: "PDF export functionality coming soon!",
       })
-
-      // Simulate download
-      const element = document.createElement("a")
-      element.href = "#" // In real implementation, this would be the PDF blob URL
-      element.download = `${presentation.metadata.sprintName}-Sprint-Review.pdf`
-      // element.click() // Uncomment for actual download
     } catch (error) {
+      console.error("Export error:", error)
       toast({
         title: "Export Failed",
-        description: "Failed to export presentation to PDF.",
+        description: "Failed to export PDF. Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsExporting(false)
     }
+  }
+
+  const clearPresentation = () => {
+    dispatch({ type: "SET_GENERATED_PRESENTATION", payload: null })
+    setCurrentSlideIndex(0)
+    toast({
+      title: "Presentation Cleared",
+      description: "Generated presentation has been cleared.",
+    })
   }
 
   const calculateQualityScore = (checklist: Record<string, string>): number => {
@@ -453,7 +459,10 @@ ${state.demoStories
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Presentation</h2>
           <p className="text-muted-foreground">
-            Generate and export your sprint review presentation for {state.selectedSprint.name}
+            {presentation 
+              ? `Generated presentation for ${state.selectedSprint?.name} (${presentation.metadata.totalSlides} slides)`
+              : `Generate and export your sprint review presentation for ${state.selectedSprint?.name}`
+            }
           </p>
         </div>
         {!presentation && (
@@ -461,6 +470,18 @@ ${state.demoStories
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Presentation className="h-4 w-4" />}
             Generate Presentation
           </Button>
+        )}
+        {presentation && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsPreviewMode(true)} className="gap-2">
+              <Eye className="h-4 w-4" />
+              Preview
+            </Button>
+            <Button onClick={generatePresentation} disabled={isGenerating} className="gap-2">
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Regenerate
+            </Button>
+          </div>
         )}
       </div>
 
@@ -552,11 +573,21 @@ ${state.demoStories
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={clearPresentation}
+                    disabled={isGenerating}
+                    className="gap-2 bg-transparent"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Clear
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={generatePresentation}
                     disabled={isGenerating}
                     className="gap-2 bg-transparent"
                   >
-                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     Regenerate
                   </Button>
                 </div>

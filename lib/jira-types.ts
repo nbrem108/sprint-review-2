@@ -1,5 +1,35 @@
 // Type definitions and validation functions for Jira API responses
 
+// Centralized Jira field mapping
+export const JIRA_FIELDS = {
+  // Standard fields
+  SUMMARY: "summary",
+  DESCRIPTION: "description",
+  STATUS: "status",
+  ASSIGNEE: "assignee",
+  ISSUE_TYPE: "issuetype",
+  PARENT: "parent",
+  ISSUE_LINKS: "issuelinks",
+  EPIC: "epic",
+
+  // Custom fields with their mappings
+  STORY_POINTS: "customfield_10127",
+  EPIC_PARENT_NAME: "customfield_10011",
+  EPIC_LINK: "customfield_10014",
+  EPIC_NAME: "customfield_10015",
+  EPIC_STATUS: "customfield_10016",
+  RELEASE_NOTES: "customfield_10000",
+} as const;
+
+// Type for field mapping
+export type JiraFieldKey = keyof typeof JIRA_FIELDS;
+export type JiraFieldValue = typeof JIRA_FIELDS[JiraFieldKey];
+
+// Helper function to get all field values
+export function getAllJiraFields(): string[] {
+  return Object.values(JIRA_FIELDS);
+}
+
 export interface JiraProject {
   id: string
   key: string
@@ -39,14 +69,50 @@ export interface JiraIssue {
       name: string
       iconUrl?: string
     }
-    customfield_10127?: number // Story Points
-    customfield_10011?: string // Epic or Parent Name
-    // Release notes field - this might vary by Jira instance
-    customfield_10000?: string // Common field for release notes
+    [JIRA_FIELDS.STORY_POINTS]?: number
+    [JIRA_FIELDS.EPIC_PARENT_NAME]?: string
+    [JIRA_FIELDS.EPIC_LINK]?: string
+    [JIRA_FIELDS.EPIC_NAME]?: string
+    [JIRA_FIELDS.EPIC_STATUS]?: string
+    [JIRA_FIELDS.RELEASE_NOTES]?: string
     parent?: {
       key: string
       fields: {
         summary: string
+      }
+    }
+    issuelinks?: Array<{
+      id: string
+      type: {
+        id: string
+        name: string
+        inward: string
+        outward: string
+      }
+      outwardIssue?: {
+        key: string
+        fields: {
+          summary: string
+          issuetype: {
+            name: string
+          }
+        }
+      }
+      inwardIssue?: {
+        key: string
+        fields: {
+          summary: string
+          issuetype: {
+            name: string
+          }
+        }
+      }
+    }>
+    epic?: {
+      key: string
+      name: string
+      color?: {
+        key: string
       }
     }
   }
@@ -178,6 +244,49 @@ export function extractSafeSprint(sprint: JiraSprint): SafeJiraSprint {
 }
 
 export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
+  // Enhanced epic extraction logic
+  let epicKey: string | undefined = undefined;
+  let epicName: string | undefined = undefined;
+  let epicColor: string | undefined = undefined;
+
+  // Try multiple sources for epic information
+  if (issue.fields.epic) {
+    // Direct epic field (most reliable)
+    epicKey = issue.fields.epic.key;
+    epicName = issue.fields.epic.name;
+    epicColor = issue.fields.epic.color?.key;
+  } else {
+    // Check for epic information in custom fields
+    const epicLink = issue.fields[JIRA_FIELDS.EPIC_LINK];
+    const epicParentName = issue.fields[JIRA_FIELDS.EPIC_PARENT_NAME];
+    const epicNameField = issue.fields[JIRA_FIELDS.EPIC_NAME];
+
+    if (epicLink && typeof epicLink === 'string') {
+      epicKey = epicLink;
+    }
+    if (epicParentName && typeof epicParentName === 'string') {
+      epicName = epicParentName;
+    }
+    if (epicNameField && typeof epicNameField === 'string') {
+      epicName = epicNameField;
+    }
+
+    // If we found an epic key but no name, use the key as the name
+    if (epicKey && !epicName) {
+      epicName = epicKey;
+    }
+    // If we found an epic name but no key, try to extract key from name
+    else if (epicName && !epicKey && /^[A-Z]+-\d+/.test(epicName)) {
+      epicKey = epicName;
+    }
+  }
+
+  // Fallback to parent information if no epic found
+  if (!epicKey && !epicName && issue.fields.parent) {
+    epicKey = issue.fields.parent.key;
+    epicName = issue.fields.parent.fields?.summary;
+  }
+
   return {
     id: issue.id,
     key: issue.key,
@@ -185,16 +294,14 @@ export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
     description: issue.fields.description,
     status: issue.fields.status.name,
     assignee: issue.fields.assignee?.displayName,
-    storyPoints: issue.fields.customfield_10127,
+    storyPoints: issue.fields[JIRA_FIELDS.STORY_POINTS],
     issueType: issue.fields.issuetype.name,
     isSubtask: !!issue.fields.parent,
     parentKey: issue.fields.parent?.key,
-    epicKey: undefined, // We'll use epicName instead
-    epicName: issue.fields.customfield_10011 || 
-      (issue.fields.parent && typeof issue.fields.parent === 'object' && 'fields' in issue.fields.parent && issue.fields.parent.fields && typeof issue.fields.parent.fields === 'object' && 'summary' in issue.fields.parent.fields && issue.fields.parent.fields.summary) ||
-      undefined,
-    epicColor: undefined, // Not available in this field structure
-    releaseNotes: issue.fields.customfield_10000, // Common release notes field
+    epicKey,
+    epicName,
+    epicColor,
+    releaseNotes: issue.fields[JIRA_FIELDS.RELEASE_NOTES],
   }
 }
 

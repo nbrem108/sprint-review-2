@@ -7,7 +7,8 @@ import {
   fetchJiraSprints, 
   fetchJiraSprintIssues,
   clearJiraCache,
-  getCacheStats
+  getCacheStats,
+  analyzeJiraFields
 } from "@/lib/jira-api"
 
 export async function POST(request: NextRequest) {
@@ -20,6 +21,8 @@ export async function POST(request: NextRequest) {
         return await handleFetchProjectsWithBoards()
       case "fetch-sprint-with-issues":
         return await handleFetchSprintWithIssues(params)
+      case "analyze-fields":
+        return await handleAnalyzeFields(params)
       case "clear-cache":
         return await handleClearCache(params)
       case "get-cache-stats":
@@ -94,6 +97,21 @@ async function handleFetchSprintWithIssues(params: { boardId: number; sprintId: 
     return NextResponse.json({ sprint: selectedSprint, issues, availableSprints: sprints })
   } catch (error) {
     console.error("Failed to fetch sprint with issues:", error)
+    throw error
+  }
+}
+
+async function handleAnalyzeFields(params: { sprintId: number }) {
+  try {
+    console.log("🚀 Batch operation: Analyzing Jira fields...")
+    const { sprintId } = params
+    if (!sprintId) {
+      throw new Error("Sprint ID is required")
+    }
+    const fields = await analyzeJiraFields(sprintId)
+    return NextResponse.json({ fields })
+  } catch (error) {
+    console.error("Failed to analyze Jira fields:", error)
     throw error
   }
 }

@@ -9,6 +9,7 @@ import { useSprintContext } from "@/components/sprint-context"
 import { ProjectSelector } from "@/components/project-selector"
 import { SprintSelector } from "@/components/sprint-selector"
 import { BoardSelector } from "@/components/board-selector"
+import { VersionBadge } from "@/components/release-notes/version-badge"
 
 export function AppSidebar() {
   const { state, dispatch } = useSprintContext()
@@ -137,6 +138,7 @@ export function AppSidebar() {
               {navigationItems.filter(item => item.isComplete).length}/{navigationItems.length}
             </span>
           </div>
+          <VersionBadge />
         </div>
 
         {/* Sidebar Content */}

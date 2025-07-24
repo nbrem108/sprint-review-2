@@ -95,6 +95,7 @@ interface SprintState {
   }
   additionalSlides: File[]
   corporateSlides: CorporateSlide[]
+  generatedPresentation: GeneratedPresentation | null
   loading: {
     projects: boolean
     sprints: boolean
@@ -104,6 +105,32 @@ interface SprintState {
   currentTab: "setup" | "demo-stories" | "metrics" | "other-slides" | "corporate-slides" | "summaries" | "presentation"
   sessionId: string
   lastSaved: string | null
+}
+
+// Add GeneratedPresentation interface
+interface GeneratedPresentation {
+  id: string
+  title: string
+  slides: PresentationSlide[]
+  createdAt: string
+  metadata: {
+    sprintName: string
+    totalSlides: number
+    hasMetrics: boolean
+    demoStoriesCount: number
+    customSlidesCount: number
+  }
+}
+
+// Add PresentationSlide interface
+interface PresentationSlide {
+  id: string
+  title: string
+  content: string
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate"
+  order: number
+  corporateSlideUrl?: string
+  storyId?: string
 }
 
 type SprintAction =
@@ -119,6 +146,7 @@ type SprintAction =
   | { type: "ADD_SLIDE"; payload: File }
   | { type: "REMOVE_SLIDE"; payload: number }
   | { type: "SET_CORPORATE_SLIDES"; payload: CorporateSlide[] }
+  | { type: "SET_GENERATED_PRESENTATION"; payload: GeneratedPresentation | null }
   | { type: "SET_LOADING"; payload: { key: keyof SprintState["loading"]; value: boolean } }
   | { type: "SET_TAB"; payload: SprintState["currentTab"] }
   | { type: "RESET_SPRINT_DATA" }
@@ -168,6 +196,7 @@ const serializeStateForStorage = (state: SprintState) => ({
   metrics: state.metrics,
   summaries: state.summaries,
   corporateSlides: state.corporateSlides,
+  generatedPresentation: state.generatedPresentation,
   currentTab: state.currentTab,
   sessionId: state.sessionId,
   lastSaved: new Date().toISOString(),
@@ -254,6 +283,7 @@ const initialState: SprintState = {
       uploadedAt: new Date().toISOString(),
     },
   ],
+  generatedPresentation: null,
   loading: {
     projects: false,
     sprints: false,
@@ -342,6 +372,9 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
       break
     case "SET_CORPORATE_SLIDES":
       newState = { ...state, corporateSlides: deduplicateCorporateSlides(action.payload) }
+      break
+    case "SET_GENERATED_PRESENTATION":
+      newState = { ...state, generatedPresentation: action.payload }
       break
     case "RESET_SPRINT_DATA":
       newState = {
