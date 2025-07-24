@@ -29,6 +29,7 @@ interface PresentationSlide {
   type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate"
   order: number
   corporateSlideUrl?: string
+  storyId?: string // Add the specific story ID for demo story slides
 }
 
 interface GeneratedPresentation {
@@ -195,6 +196,7 @@ ${state.demoStories
               content: summary,
               type: "demo-story",
               order: slideOrder++,
+              storyId: storyId, // Add the specific story ID
             })
           }
         }

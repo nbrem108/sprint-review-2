@@ -45,12 +45,39 @@
     width: 100%;
   }
   
+  /* Enhanced fullscreen slide container */
+  .slide-container-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+    max-width: none;
+  }
+  
   /* Ensure proper slide scaling */
   .slide-content-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100%;
+  }
+  
+  /* Fullscreen content wrapper */
+  .slide-content-wrapper-fullscreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  /* Responsive text scaling for fullscreen */
+  .fullscreen-text-scale {
+    font-size: clamp(1.5rem, 4vw, 4rem);
+  }
+  
+  .fullscreen-content-scale {
+    font-size: clamp(1rem, 2.5vw, 2rem);
   }
 }
 

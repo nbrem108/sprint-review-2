@@ -18,6 +18,7 @@ interface PresentationSlide {
   type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "review-legend"
   order: number
   corporateSlideUrl?: string // Add this for corporate slides
+  storyId?: string // Add the specific story ID for demo story slides
 }
 
 interface Issue {
@@ -71,6 +72,15 @@ interface SlideRendererProps {
 function SlideBackground({ children, className = "", isFullscreen = false }: { children: React.ReactNode; className?: string; isFullscreen?: boolean }) {
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
+      {/* Background image for title slides */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/corporate-slides/blank_template.png')",
+          filter: "brightness(0.7) contrast(1.1)"
+        }}
+      />
+      
       {/* Content overlay with improved contrast and responsive padding */}
       <div className="relative z-10 w-full h-full flex flex-col">
         {children}
@@ -84,19 +94,19 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
   // Standard mode: 960x540px (scaled down for better UX)
   // Fullscreen mode: full screen with maintained aspect ratio
   
-  // Container sizing based on mode - More compact for screensharing
+  // Enhanced container sizing based on mode - Better fullscreen utilization
   const containerClass = isFullscreen
-    ? "w-full h-full p-2 sm:p-3 lg:p-4 flex flex-col justify-center min-h-0 max-w-6xl mx-auto"
+    ? "w-full h-full p-3 sm:p-4 lg:p-6 xl:p-8 flex flex-col justify-center min-h-0"
     : "slide-container mx-auto my-2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center min-h-0 shadow-lg border border-gray-200 rounded-lg bg-white"
 
-  // Typography scaling based on mode - More compact for screensharing
+  // Enhanced typography scaling based on mode - Better fullscreen optimization
   const titleClass = isFullscreen 
-    ? "text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3 lg:mb-4 text-center leading-tight" 
+    ? "text-2xl sm:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold mb-3 sm:mb-4 lg:mb-6 xl:mb-8 text-center leading-tight" 
     : "text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3 lg:mb-4 text-center leading-tight"
 
-  // Content scaling based on mode - More compact for screensharing
+  // Enhanced content scaling based on mode - Better readability in fullscreen
   const contentClass = isFullscreen 
-    ? "text-sm sm:text-base lg:text-lg leading-relaxed" 
+    ? "text-base sm:text-lg lg:text-xl xl:text-2xl leading-relaxed" 
     : "text-xs sm:text-sm lg:text-base leading-relaxed"
 
   // Responsive behavior testing
@@ -202,18 +212,18 @@ function TitleSlide({ slide, containerClass, titleClass }: any) {
   return (
     <div className={`${containerClass} relative`}>
       {/* Enhanced overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/30 rounded-lg"></div>
+      <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
       
-      <div className="relative z-20 text-center space-y-4 sm:space-y-6 lg:space-y-8">
-        <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div className="relative z-20 text-center space-y-6 sm:space-y-8 lg:space-y-10 xl:space-y-12">
+        <div className="space-y-3 sm:space-y-4 lg:space-y-6 xl:space-y-8">
           <h1 className={`${titleClass} text-white drop-shadow-lg font-extrabold tracking-tight`}>{slide.title}</h1>
-          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-white/80 mx-auto rounded-full shadow-sm"></div>
+          <div className="w-20 sm:w-24 lg:w-32 xl:w-40 h-1 sm:h-1.5 lg:h-2 bg-white/80 mx-auto rounded-full shadow-sm"></div>
         </div>
 
-        <div className="prose prose-sm sm:prose-lg lg:prose-xl prose-invert max-w-none text-center">
+        <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl 2xl:prose-2xl prose-invert max-w-none text-center px-4 sm:px-6 lg:px-8 xl:px-12">
           <ReactMarkdown
             components={{
-              p: ({ children }) => <p className="text-white/95 drop-shadow-md leading-relaxed">{children}</p>,
+              p: ({ children }) => <p className="text-white/95 drop-shadow-md leading-relaxed sm:leading-loose lg:leading-loose">{children}</p>,
               strong: ({ children }) => <strong className="font-bold text-white drop-shadow-md">{children}</strong>,
               em: ({ children }) => <em className="text-white/90 italic drop-shadow-md">{children}</em>,
             }}
@@ -222,15 +232,15 @@ function TitleSlide({ slide, containerClass, titleClass }: any) {
           </ReactMarkdown>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-8 text-white/95">
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 drop-shadow-sm" />
-            <span className="text-sm sm:text-base font-medium">Sprint Review</span>
+        <div className="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-6 lg:space-x-8 xl:space-x-12 text-white/95 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 drop-shadow-sm" />
+            <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Sprint Review</span>
           </div>
-          <div className="hidden sm:block w-2 h-2 bg-white/80 rounded-full shadow-sm"></div>
-          <div className="flex items-center space-x-2">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 drop-shadow-sm" />
-            <span className="text-sm sm:text-base font-medium">Team Presentation</span>
+          <div className="hidden sm:block w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 bg-white/80 rounded-full shadow-sm"></div>
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Target className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 drop-shadow-sm" />
+            <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium">Team Presentation</span>
           </div>
         </div>
       </div>
@@ -245,28 +255,28 @@ function SummarySlide({ slide, containerClass, titleClass, contentClass, allIssu
       <div className="absolute inset-0 bg-white/95 rounded-lg shadow-sm"></div>
       
       <div className="relative z-20 h-full flex flex-col">
-        <div className="text-center mb-3 sm:mb-4 flex-shrink-0">
+        <div className="text-center mb-4 sm:mb-6 lg:mb-8 flex-shrink-0">
           <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>{slide.title}</h2>
-          <div className="w-12 sm:w-14 lg:w-16 h-1 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
+          <div className="w-16 sm:w-20 lg:w-24 xl:w-32 h-1 sm:h-1.5 lg:h-2 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col">
-          {/* Summary Content - Compact */}
-          <div className="flex-1 min-h-0 overflow-y-auto mb-3 sm:mb-4">
-            <div className={`prose prose-sm sm:prose-base max-w-none ${contentClass} slide-content slide-overflow`}>
+          {/* Summary Content - Enhanced responsive */}
+          <div className="flex-1 min-h-0 overflow-y-auto mb-4 sm:mb-6 lg:mb-8 px-4 sm:px-6 lg:px-8">
+            <div className={`prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none ${contentClass} slide-content slide-overflow`}>
               <ReactMarkdown
                 components={{
-                  h1: ({ children }) => <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 border-b border-gray-200 pb-1 slide-readable">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-800 mb-2 sm:mb-3 mt-3 sm:mt-4 text-ca-blue-700 slide-readable">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-700 mb-1 sm:mb-2 mt-2 sm:mt-3 slide-readable">{children}</h3>,
-                  ul: ({ children }) => <ul className="space-y-1 ml-3 sm:ml-4">{children}</ul>,
+                  h1: ({ children }) => <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 lg:mb-6 border-b border-gray-200 pb-2 sm:pb-3 slide-readable">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-800 mb-3 sm:mb-4 lg:mb-6 mt-4 sm:mt-6 lg:mt-8 text-ca-blue-700 slide-readable">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-medium text-gray-700 mb-2 sm:mb-3 lg:mb-4 mt-3 sm:mt-4 lg:mt-6 slide-readable">{children}</h3>,
+                  ul: ({ children }) => <ul className="space-y-2 sm:space-y-3 lg:space-y-4 ml-4 sm:ml-6 lg:ml-8">{children}</ul>,
                   li: ({ children }) => (
-                    <li className="flex items-start space-x-2">
-                      <span className="text-ca-blue-600 mt-1 font-bold text-xs">•</span>
-                      <span className="text-gray-800 text-sm slide-readable">{children}</span>
+                    <li className="flex items-start space-x-3 sm:space-x-4">
+                      <span className="text-ca-blue-600 mt-1 font-bold text-sm sm:text-base">•</span>
+                      <span className="text-gray-800 text-sm sm:text-base lg:text-lg slide-readable">{children}</span>
                     </li>
                   ),
-                  p: ({ children }) => <p className="mb-2 sm:mb-3 text-gray-700 leading-relaxed text-sm slide-readable">{children}</p>,
+                  p: ({ children }) => <p className="mb-3 sm:mb-4 lg:mb-6 text-gray-700 leading-relaxed sm:leading-loose text-sm sm:text-base lg:text-lg slide-readable">{children}</p>,
                   strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
                   em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
                 }}
@@ -276,8 +286,8 @@ function SummarySlide({ slide, containerClass, titleClass, contentClass, allIssu
             </div>
           </div>
 
-          {/* Epic Breakdown Section - Compact version */}
-          <div className="border-t border-gray-200 pt-3 flex-shrink-0">
+          {/* Epic Breakdown Section - Enhanced responsive */}
+          <div className="border-t border-gray-200 pt-4 sm:pt-6 lg:pt-8 flex-shrink-0 px-4 sm:px-6 lg:px-8">
             <EpicBreakdown issues={allIssues} isFullscreen={isFullscreen} />
           </div>
         </div>
@@ -308,22 +318,22 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
 
   // Responsive grid classes
   const gridClass = isFullscreen 
-    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8" 
+    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-10" 
     : "grid grid-cols-2 gap-2 sm:gap-3"
   
   // Responsive metric card classes with enhanced styling
   const metricCardClass = isFullscreen 
-    ? "text-center p-3 sm:p-4 lg:p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow" 
+    ? "text-center p-4 sm:p-6 lg:p-8 xl:p-10 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow" 
     : "text-center p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
   
   // Responsive metric value classes
   const metricValueClass = isFullscreen 
-    ? "text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2" 
+    ? "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-2 sm:mb-3 lg:mb-4" 
     : "text-lg sm:text-xl font-bold mb-1"
   
   // Responsive metric label classes
   const metricLabelClass = isFullscreen 
-    ? "text-sm sm:text-base lg:text-lg text-gray-600 font-medium" 
+    ? "text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-600 font-medium" 
     : "text-xs sm:text-sm text-gray-600 font-medium"
 
   return (
@@ -334,7 +344,7 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
       <div className="relative z-20 space-y-4 sm:space-y-6 lg:space-y-8">
         <div className="text-center">
           <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Sprint {sprintMetrics.sprintNumber} Metrics</h2>
-          <div className="w-12 sm:w-14 lg:w-16 h-1 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
+          <div className="w-16 sm:w-20 lg:w-24 xl:w-32 h-1 sm:h-1.5 lg:h-2 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
         </div>
 
         {/* Key Metrics Grid */}
@@ -342,11 +352,11 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
           <div className={metricCardClass}>
             <div className={`${metricValueClass} text-ca-blue-600`}>{completionRate}%</div>
             <div className={metricLabelClass}>Completion Rate</div>
-            <div className="flex justify-center mt-1 sm:mt-2">
+            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
               {completionRate >= 80 ? (
-                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-500 drop-shadow-sm" />
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-green-500 drop-shadow-sm" />
               ) : (
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-yellow-500 drop-shadow-sm" />
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-yellow-500 drop-shadow-sm" />
               )}
             </div>
           </div>
@@ -354,14 +364,14 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
           <div className={metricCardClass}>
             <div className={`${metricValueClass} text-ca-orange-600`}>{sprintMetrics.completedTotalPoints}</div>
             <div className={metricLabelClass}>Story Points</div>
-            <div className="text-xs text-gray-500 mt-1 font-medium">of {sprintMetrics.estimatedPoints} planned</div>
+            <div className="text-sm sm:text-base lg:text-lg text-gray-500 mt-2 sm:mt-3 font-medium">of {sprintMetrics.estimatedPoints} planned</div>
           </div>
 
           <div className={metricCardClass}>
             <div className={`${metricValueClass} text-ca-indigo-600`}>{sprintMetrics.testCoverage}%</div>
             <div className={metricLabelClass}>Test Coverage</div>
-            <div className="flex justify-center mt-1 sm:mt-2">
-              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-ca-indigo-500 drop-shadow-sm" />
+            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
+              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-ca-indigo-500 drop-shadow-sm" />
             </div>
           </div>
 
@@ -372,32 +382,32 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
               {qualityScore}%
             </div>
             <div className={metricLabelClass}>Quality Score</div>
-            <div className="flex justify-center mt-1 sm:mt-2">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-500 drop-shadow-sm" />
+            <div className="flex justify-center mt-2 sm:mt-3 lg:mt-4">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-gray-500 drop-shadow-sm" />
             </div>
           </div>
         </div>
 
         {/* Quality Standards Summary */}
-        <div className="bg-gray-50 rounded-lg p-2 sm:p-3 lg:p-4 border border-gray-200">
-          <h3 className="text-sm sm:text-base font-bold mb-2 sm:mb-3 text-center text-gray-900">Quality Standards Achievement</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1 sm:gap-2">
+        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 lg:p-6 xl:p-8 border border-gray-200">
+          <h3 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold mb-3 sm:mb-4 lg:mb-6 text-center text-gray-900">Quality Standards Achievement</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
             {Object.entries(sprintMetrics.qualityChecklist)
               .slice(0, 10)
               .map(([key, value]) => (
-                <div key={key} className="text-center bg-white rounded-lg p-1 sm:p-2 shadow-sm">
-                  <div className="mb-1">
+                <div key={key} className="text-center bg-white rounded-lg p-2 sm:p-3 lg:p-4 shadow-sm">
+                  <div className="mb-2 sm:mb-3">
                     {value === "yes" ? (
-                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mx-auto drop-shadow-sm" />
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-green-500 mx-auto drop-shadow-sm" />
                     ) : value === "partial" ? (
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 mx-auto drop-shadow-sm" />
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-yellow-500 mx-auto drop-shadow-sm" />
                     ) : value === "na" ? (
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full mx-auto"></div>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-gray-300 rounded-full mx-auto"></div>
                     ) : (
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 rounded-full mx-auto"></div>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 bg-red-200 rounded-full mx-auto"></div>
                     )}
                   </div>
-                  <div className="text-xs text-gray-600 capitalize font-medium">{key.replace(/([A-Z])/g, " $1").trim()}</div>
+                  <div className="text-xs sm:text-sm lg:text-base text-gray-600 capitalize font-medium">{key.replace(/([A-Z])/g, " $1").trim()}</div>
                 </div>
               ))}
           </div>
@@ -451,13 +461,13 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
     userImpact = processContent(content?.userImpact || '');
   }
 
-  // Enhanced issue details with fallbacks
+  // Enhanced issue details with fallbacks - now uses specific story
   const getIssueDetails = () => {
     if (!issues || issues.length === 0) {
       return null;
     }
 
-    const issue = issues[0]; // Primary issue for demo story
+    const issue = issues.find(i => i.id === slide.storyId) || issues[0]; // Use specific story or fallback
     return {
       assignee: issue.assignee || 'Unassigned',
       issueKey: issue.key || 'N/A',
@@ -470,78 +480,99 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
 
   const issueDetails = getIssueDetails();
 
+  // Enhanced responsive typography classes
+  const titleClass = isFullscreen 
+    ? "text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-3 sm:mb-4 lg:mb-6"
+    : "text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 sm:mb-3 lg:mb-4";
+
+  const subtitleClass = isFullscreen
+    ? "text-sm sm:text-base lg:text-lg xl:text-xl font-semibold text-white mb-2 sm:mb-3 lg:mb-4"
+    : "text-sm sm:text-base lg:text-lg font-semibold text-white mb-2 sm:mb-3";
+
+  const contentClass = isFullscreen
+    ? "text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed"
+    : "text-xs sm:text-sm lg:text-base leading-relaxed";
+
+  const cardTitleClass = isFullscreen
+    ? "text-base sm:text-lg lg:text-xl xl:text-2xl font-semibold text-white mb-2 sm:mb-3 lg:mb-4"
+    : "text-sm sm:text-base lg:text-lg font-semibold text-white mb-2 sm:mb-3";
+
+  const cardContentClass = isFullscreen
+    ? "text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed"
+    : "text-xs sm:text-sm lg:text-base leading-relaxed";
+
   return (
     <div className={`${containerClass} relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden`}>
       
-      {/* Content Container - Adjusted for PowerPoint-like sizing */}
-      <div className={`relative z-10 flex flex-col h-full ${isFullscreen ? 'p-2 sm:p-3' : 'p-4 sm:p-6 lg:p-8'}`}>
+      {/* Content Container - Enhanced responsive padding */}
+      <div className={`relative z-10 flex flex-col h-full ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 xl:p-10' : 'p-4 sm:p-6 lg:p-8'}`}>
         {/* Header */}
-        <div className={`${isFullscreen ? 'mb-2' : 'mb-3 sm:mb-4'} flex-shrink-0`}>
-          <h1 className={`${isFullscreen ? 'text-base sm:text-lg' : 'text-lg sm:text-xl lg:text-2xl'} font-bold text-white mb-2`}>
+        <div className="flex-shrink-0 mb-4 sm:mb-6 lg:mb-8">
+          <h1 className={titleClass}>
             Demo Story
           </h1>
-          <div className="h-1 w-16 sm:w-20 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"></div>
+          <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"></div>
         </div>
 
-        {/* Main Content Area */}
-        <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 ${isFullscreen ? 'gap-2 sm:gap-3' : 'gap-4 sm:gap-6 lg:gap-8'}`}>
-          {/* Left Column - Issue Details & Accomplishments */}
-          <div className={`flex flex-col ${isFullscreen ? 'space-y-2 sm:space-y-3' : 'space-y-4 sm:space-y-5'}`}>
-            {/* Issue Details Card - Compact */}
-            {issueDetails && (
-              <div className={`bg-black/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-white/40 flex-shrink-0`}>
-                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
-                  <User className="w-4 h-4 mr-2 text-blue-400" />
-                  Issue Details
-                </h3>
-                <div className={`grid grid-cols-2 ${isFullscreen ? 'gap-1 sm:gap-2' : 'gap-2 sm:gap-3'} ${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                  <div>
-                    <span className="text-gray-300 text-xs">Assignee:</span>
-                    <p className="text-white font-medium slide-content slide-overflow">{issueDetails.assignee}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-300 text-xs">Issue Key:</span>
-                    <p className="text-white font-medium">{issueDetails.issueKey}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-300 text-xs">Story Points:</span>
-                    <p className="text-white font-medium">{issueDetails.storyPoints}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-300 text-xs">Type:</span>
-                    <p className="text-white font-medium">{issueDetails.type}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-300 text-xs">Epic:</span>
-                    <p className="text-white font-medium slide-content slide-overflow">{issueDetails.epic}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-300 text-xs">Summary:</span>
-                    <p className="text-white font-medium text-xs leading-tight slide-content slide-overflow">{issueDetails.summary}</p>
-                  </div>
+        {/* Main Content Area - Enhanced responsive layout */}
+        <div className={`flex-1 min-h-0 ${isFullscreen ? 'flex flex-row space-x-6 lg:space-x-8 xl:space-x-10' : 'grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8'}`}>
+          {/* Issue Details Card - Enhanced responsive */}
+          {issueDetails && (
+            <div className={`bg-black/50 backdrop-blur-lg rounded-xl border border-white/40 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 w-80 lg:w-96 flex-shrink-0' : 'p-3 sm:p-4 lg:p-6'}`}>
+              <h3 className={`${subtitleClass} flex items-center`}>
+                <User className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-blue-400" />
+                Issue Details
+              </h3>
+              <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 ${contentClass}`}>
+                <div>
+                  <span className="text-gray-300 text-xs sm:text-sm">Assignee:</span>
+                  <p className="text-white font-medium slide-content slide-overflow">{issueDetails.assignee}</p>
+                </div>
+                <div>
+                  <span className="text-gray-300 text-xs sm:text-sm">Issue Key:</span>
+                  <p className="text-white font-medium">{issueDetails.issueKey}</p>
+                </div>
+                <div>
+                  <span className="text-gray-300 text-xs sm:text-sm">Story Points:</span>
+                  <p className="text-white font-medium">{issueDetails.storyPoints}</p>
+                </div>
+                <div>
+                  <span className="text-gray-300 text-xs sm:text-sm">Type:</span>
+                  <p className="text-white font-medium">{issueDetails.type}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-300 text-xs sm:text-sm">Epic:</span>
+                  <p className="text-white font-medium slide-content slide-overflow">{issueDetails.epic}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-300 text-xs sm:text-sm">Summary:</span>
+                  <p className="text-white font-medium leading-tight slide-content slide-overflow">{issueDetails.summary}</p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Accomplishments - Organized Content */}
+          {/* Content Cards - Enhanced responsive layout */}
+          <div className={`${isFullscreen ? 'flex flex-row space-x-6 lg:space-x-8 xl:space-x-10 flex-1' : 'flex flex-col space-y-4 sm:space-y-5 lg:space-y-6'}`}>
+            {/* Accomplishments - Enhanced responsive */}
             {accomplishments.hasContent && (
-              <div className={`bg-gradient-to-br from-blue-600/50 to-cyan-600/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-blue-500/60 flex-1 min-h-0`}>
-                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
+              <div className={`bg-gradient-to-br from-blue-600/50 to-cyan-600/50 backdrop-blur-lg rounded-xl border border-blue-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
+                <h3 className={`${cardTitleClass} flex items-center`}>
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-green-400" />
                   Accomplishments
                 </h3>
                 <div className="h-full overflow-y-auto">
                   {accomplishments.sections.length > 0 ? (
-                    <div className={`${isFullscreen ? 'space-y-2' : 'space-y-3'}`}>
+                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                       {accomplishments.sections.slice(0, 4).map((section, index) => (
-                        <div key={index} className={`bg-white/10 rounded-lg ${isFullscreen ? 'p-1 sm:p-2' : 'p-2 sm:p-3'}`}>
-                          <h4 className={`${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'} font-semibold text-blue-200 ${isFullscreen ? 'mb-1' : 'mb-1'}`}>
+                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
+                          <h4 className={`${contentClass} font-semibold text-blue-200 mb-2 sm:mb-3`}>
                             {section.title}
                           </h4>
-                          <div className={`${isFullscreen ? 'text-xs' : 'text-xs sm:text-sm'} text-white leading-relaxed slide-content slide-overflow`}>
+                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                             <div 
                               dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 200) + (section.content.length > 200 ? '...' : '')) 
+                                __html: marked(section.content.slice(0, 300) + (section.content.length > 300 ? '...' : '')) 
                               }}
                             />
                           </div>
@@ -549,7 +580,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                       <div 
                         dangerouslySetInnerHTML={{ 
                           __html: marked(accomplishments.processedContent) 
@@ -560,29 +591,26 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Right Column - Business Value & User Impact */}
-          <div className={`flex flex-col ${isFullscreen ? 'space-y-2 sm:space-y-3' : 'space-y-4 sm:space-y-5'}`}>
-            {/* Business Value */}
+            {/* Business Value - Enhanced responsive */}
             {businessValue.hasContent && (
-              <div className={`bg-gradient-to-br from-emerald-600/50 to-teal-600/50 backdrop-blur-lg rounded-xl ${isFullscreen ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} border border-emerald-500/60 flex-1 min-h-0`}>
-                <h3 className={`${isFullscreen ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-semibold text-white ${isFullscreen ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'} flex items-center`}>
-                  <TrendingUp className="w-4 h-4 mr-2 text-emerald-400" />
+              <div className={`bg-gradient-to-br from-emerald-600/50 to-teal-600/50 backdrop-blur-lg rounded-xl border border-emerald-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
+                <h3 className={`${cardTitleClass} flex items-center`}>
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-emerald-400" />
                   Business Value
                 </h3>
                 <div className="h-full overflow-y-auto">
                   {businessValue.sections.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                       {businessValue.sections.slice(0, 3).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-2 sm:p-3">
-                          <h4 className="text-xs sm:text-sm font-semibold text-emerald-200 mb-1">
+                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
+                          <h4 className={`${contentClass} font-semibold text-emerald-200 mb-2 sm:mb-3`}>
                             {section.title}
                           </h4>
-                          <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                             <div 
                               dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 150) + (section.content.length > 150 ? '...' : '')) 
+                                __html: marked(section.content.slice(0, 250) + (section.content.length > 250 ? '...' : '')) 
                               }}
                             />
                           </div>
@@ -590,7 +618,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                       <div 
                         dangerouslySetInnerHTML={{ 
                           __html: marked(businessValue.processedContent) 
@@ -602,25 +630,25 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
               </div>
             )}
 
-            {/* User Impact */}
+            {/* User Impact - Enhanced responsive */}
             {userImpact.hasContent && (
-              <div className="bg-gradient-to-br from-purple-600/50 to-pink-600/50 backdrop-blur-lg rounded-xl p-3 sm:p-4 border border-purple-500/60 flex-1 min-h-0">
-                <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center">
-                  <Users className="w-4 h-4 mr-2 text-purple-400" />
+              <div className={`bg-gradient-to-br from-purple-600/50 to-pink-600/50 backdrop-blur-lg rounded-xl border border-purple-500/60 min-h-0 ${isFullscreen ? 'p-4 sm:p-6 lg:p-8 flex-1' : 'p-3 sm:p-4 lg:p-6'}`}>
+                <h3 className={`${cardTitleClass} flex items-center`}>
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 text-purple-400" />
                   User Impact
                 </h3>
                 <div className="h-full overflow-y-auto">
                   {userImpact.sections.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                       {userImpact.sections.slice(0, 3).map((section, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-2 sm:p-3">
-                          <h4 className="text-xs sm:text-sm font-semibold text-purple-200 mb-1">
+                        <div key={index} className="bg-white/10 rounded-lg p-3 sm:p-4 lg:p-6">
+                          <h4 className={`${contentClass} font-semibold text-purple-200 mb-2 sm:mb-3`}>
                             {section.title}
                           </h4>
-                          <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                          <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                             <div 
                               dangerouslySetInnerHTML={{ 
-                                __html: marked(section.content.slice(0, 150) + (section.content.length > 150 ? '...' : '')) 
+                                __html: marked(section.content.slice(0, 250) + (section.content.length > 250 ? '...' : '')) 
                               }}
                             />
                           </div>
@@ -628,7 +656,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs sm:text-sm text-white leading-relaxed slide-content slide-overflow">
+                    <div className={`${cardContentClass} text-white leading-relaxed slide-content slide-overflow`}>
                       <div 
                         dangerouslySetInnerHTML={{ 
                           __html: marked(userImpact.processedContent) 
@@ -639,22 +667,12 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                 </div>
               </div>
             )}
-
-            {/* Fallback for empty content */}
-            {!accomplishments.hasContent && !businessValue.hasContent && !userImpact.hasContent && (
-              <div className="bg-black/50 backdrop-blur-lg rounded-xl p-3 sm:p-4 border border-white/40 flex items-center justify-center h-32">
-                <div className="text-center text-gray-400">
-                  <FileText className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">No demo content available</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 function CustomSlide({ slide, containerClass, titleClass }: any) {
   return (

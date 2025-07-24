@@ -295,7 +295,7 @@ export function PresentationMode({
       )}
 
       {/* Slide Content */}
-      <div id="slide-container" className={`flex-1 bg-gray-50 relative overflow-hidden ${!isFullscreen ? 'slide-content-wrapper p-1 sm:p-2' : ''}`}>
+      <div id="slide-container" className={`flex-1 bg-gray-50 relative overflow-hidden ${!isFullscreen ? 'slide-content-wrapper p-1 sm:p-2' : 'slide-content-wrapper-fullscreen'}`}>
         <SlideRenderer
           slide={allSlides[currentSlide]}
           allIssues={allIssues}
