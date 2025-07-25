@@ -1,14 +1,41 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
+import { exportQualityAssurance } from './export-quality-assurance';
+import { exportErrorHandler } from './export-error-handler';
+import { exportCache } from './export-cache';
 
-// Types for export functionality
+// Enhanced types for export functionality
 export interface ExportOptions {
-  format: 'pdf' | 'html' | 'markdown' | 'metrics';
+  format: 'pdf' | 'html' | 'markdown' | 'metrics' | 'executive' | 'digest';
   quality?: 'low' | 'medium' | 'high';
   includeImages?: boolean;
   executiveFormat?: boolean;
   fileName?: string;
+  compression?: boolean;
+  interactive?: boolean;
+  batchSize?: number;
+  progressive?: boolean;
+}
+
+export interface ExportProgress {
+  current: number;
+  total: number;
+  stage: 'preparing' | 'rendering' | 'processing' | 'finalizing';
+  message: string;
+  percentage: number;
+}
+
+export interface ExportResult {
+  blob: Blob;
+  fileName: string;
+  fileSize: number;
+  format: string;
+  metadata: {
+    slideCount: number;
+    processingTime: number;
+    quality: string;
+  };
 }
 
 export interface PresentationSlide {
@@ -67,10 +94,57 @@ export interface GeneratedPresentation {
   };
 }
 
+// Format-specific renderer interfaces
+export interface ExportRenderer {
+  render(
+    presentation: GeneratedPresentation,
+    allIssues: Issue[],
+    upcomingIssues: Issue[],
+    sprintMetrics: SprintMetrics | null | undefined,
+    options: ExportOptions,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult>;
+}
+
+export interface AssetEmbedder {
+  embedImage(url: string): Promise<string>;
+  embedCSS(css: string): string;
+  embedFont(fontFamily: string, fontUrl: string): Promise<string>;
+  getEmbeddedAssets(): Map<string, string>;
+}
+
+// Export configuration
+export interface ExportConfig {
+  quality: 'low' | 'medium' | 'high';
+  compression: boolean;
+  interactive: boolean;
+  includeImages: boolean;
+  maxFileSize: number; // in MB
+  timeout: number; // in seconds
+}
+
 export class ExportService {
   private static instance: ExportService;
+  private renderers: Map<string, ExportRenderer> = new Map();
+  private assetEmbedder: AssetEmbedder;
+  private config: ExportConfig;
+  private cache: Map<string, ExportResult> = new Map();
 
-  private constructor() {}
+  private constructor() {
+    this.config = {
+      quality: 'medium',
+      compression: true,
+      interactive: true,
+      includeImages: true,
+      maxFileSize: 10,
+      timeout: 30000
+    };
+    // Initialize asset embedder
+    this.assetEmbedder = {} as AssetEmbedder;
+    
+    // Register default renderers
+    this.registerDefaultRenderers();
+  }
 
   public static getInstance(): ExportService {
     if (!ExportService.instance) {
@@ -80,338 +154,346 @@ export class ExportService {
   }
 
   /**
-   * Export presentation to PDF format
+   * Register a format-specific renderer
+   */
+  public registerRenderer(format: string, renderer: ExportRenderer): void {
+    this.renderers.set(format, renderer);
+  }
+
+  /**
+   * Register default renderers
+   */
+  private registerDefaultRenderers(): void {
+    // Import and register renderers (client-side only)
+    if (typeof window !== 'undefined') {
+      import('../components/export/html-export-renderer').then(({ HTMLExportRenderer }) => {
+        this.registerRenderer('html', new HTMLExportRenderer());
+      });
+    }
+    
+    import('./markdown-export-renderer').then(({ MarkdownExportRenderer }) => {
+      this.registerRenderer('markdown', new MarkdownExportRenderer());
+    });
+    
+    import('./pdf-export-renderer').then(({ PDFExportRenderer }) => {
+      this.registerRenderer('pdf', new PDFExportRenderer());
+    });
+    
+    import('./executive-export-renderer').then(({ ExecutiveExportRenderer }) => {
+      this.registerRenderer('executive', new ExecutiveExportRenderer());
+    });
+    
+    // Register digest renderer (server-side only)
+    if (typeof window === 'undefined') {
+      import('./digest-export-renderer').then(({ DigestExportRenderer }) => {
+        this.registerRenderer('digest', new DigestExportRenderer());
+      });
+    }
+    
+    console.log('📝 Registered default renderers: html, markdown, pdf, executive, digest');
+  }
+
+  /**
+   * Set export configuration
+   */
+  public setConfig(config: Partial<ExportConfig>): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Get current configuration
+   */
+  public getConfig(): ExportConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Main export method with progress tracking
+   */
+  async export(
+    presentation: GeneratedPresentation,
+    allIssues: Issue[],
+    upcomingIssues: Issue[],
+    sprintMetrics: SprintMetrics | null | undefined,
+    options: ExportOptions,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    const startTime = Date.now();
+    let attempt = 1;
+    
+    try {
+      // Validate inputs
+      this.validateExportInputs(presentation, options);
+
+      // Validate export options with error handler
+      const validation = exportErrorHandler.validateExportOptions(presentation, options);
+      if (!validation.valid) {
+        throw new Error(`Export validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Check cache first
+      const cacheKey = exportCache.generateCacheKey(presentation, options);
+      const cachedResult = exportCache.get(cacheKey);
+      if (cachedResult) {
+        console.log('🚀 Cache hit for export');
+        return cachedResult;
+      }
+
+      // Update progress
+      this.updateProgress(onProgress, {
+        current: 0,
+        total: 100,
+        stage: 'preparing',
+        message: 'Preparing export...',
+        percentage: 0
+      });
+
+      // Get the appropriate renderer
+      const renderer = this.renderers.get(options.format);
+      if (!renderer) {
+        throw new Error(`No renderer found for format: ${options.format}`);
+      }
+
+      // Merge options with config
+      const mergedOptions: ExportOptions = {
+        ...this.config,
+        ...options
+      };
+
+      // Execute export with retry logic
+      let result: ExportResult;
+      while (attempt <= 3) {
+        try {
+          result = await renderer.render(
+            presentation,
+            allIssues,
+            upcomingIssues,
+            sprintMetrics,
+            mergedOptions,
+            onProgress
+          );
+          break; // Success, exit retry loop
+        } catch (error) {
+          const exportError = await exportErrorHandler.handleExportError(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              presentation,
+              options: mergedOptions,
+              attempt,
+              format: options.format
+            }
+          );
+          
+          if (attempt >= 3 || !exportError.recoverable) {
+            throw error; // Re-throw if max retries reached or not recoverable
+          }
+          
+          attempt++;
+          console.log(`🔄 Retrying export (attempt ${attempt}/3)...`);
+        }
+      }
+
+      // Add metadata
+      result!.metadata.processingTime = Date.now() - startTime;
+      result!.metadata.slideCount = presentation.slides.length;
+      result!.metadata.quality = options.quality || 'medium';
+
+      // Cache the result
+      exportCache.set(cacheKey, result!, presentation, mergedOptions);
+
+      // Perform quality assurance
+      const qualityReport = await exportQualityAssurance.validateExport(
+        result!,
+        presentation,
+        mergedOptions
+      );
+
+      if (!qualityReport.passed) {
+        console.warn('⚠️ Export quality check failed:', qualityReport.recommendations);
+      }
+
+      // Update progress
+      this.updateProgress(onProgress, {
+        current: 100,
+        total: 100,
+        stage: 'finalizing',
+        message: 'Export completed successfully',
+        percentage: 100
+      });
+
+      return result!;
+
+    } catch (error) {
+      console.error('❌ Export failed:', error);
+      throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Export to PDF format
    */
   async exportToPDF(
     presentation: GeneratedPresentation,
     allIssues: Issue[],
     upcomingIssues: Issue[],
     sprintMetrics?: SprintMetrics | null,
-    options: ExportOptions = { format: 'pdf' }
-  ): Promise<Blob> {
-    try {
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      // Add company logo to each page
-      const logoUrl = '/company-logos/CommandAlkon_Logo_Primary_CMYK.svg';
-      
-      // Process each slide
-      for (let i = 0; i < presentation.slides.length; i++) {
-        const slide = presentation.slides[i];
-        
-        // Add new page for each slide (except first)
-        if (i > 0) {
-          doc.addPage();
-        }
-        
-        // Add slide title
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text(slide.title, pageWidth / 2, 30, { align: 'center' });
-        
-        // Add slide content based on type
-        await this.renderSlideContent(doc, slide, allIssues, upcomingIssues, sprintMetrics, pageWidth, pageHeight);
-        
-        // Add company logo
-        this.addCompanyLogo(doc, logoUrl, pageWidth, pageHeight);
-        
-        // Add page number
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Page ${i + 1} of ${presentation.slides.length}`, pageWidth - 20, pageHeight - 10);
-      }
-      
-      return doc.output('blob');
-    } catch (error) {
-      console.error('PDF export error:', error);
-      throw new Error('Failed to generate PDF export');
-    }
+    options: ExportOptions = { format: 'pdf' },
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    return this.export(presentation, allIssues, upcomingIssues, sprintMetrics, options, onProgress);
   }
 
   /**
-   * Export presentation to HTML format
+   * Export to HTML format
    */
   async exportToHTML(
     presentation: GeneratedPresentation,
     allIssues: Issue[],
     upcomingIssues: Issue[],
     sprintMetrics?: SprintMetrics | null,
-    options: ExportOptions = { format: 'html' }
-  ): Promise<Blob> {
-    try {
-      const htmlContent = this.generateHTMLContent(presentation, allIssues, upcomingIssues, sprintMetrics, options);
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      return blob;
-    } catch (error) {
-      console.error('HTML export error:', error);
-      throw new Error('Failed to generate HTML export');
-    }
+    options: ExportOptions = { format: 'html' },
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    return this.export(presentation, allIssues, upcomingIssues, sprintMetrics, options, onProgress);
   }
 
   /**
-   * Export presentation to Markdown format
+   * Export to Markdown format
    */
   async exportToMarkdown(
     presentation: GeneratedPresentation,
     allIssues: Issue[],
     upcomingIssues: Issue[],
     sprintMetrics?: SprintMetrics | null,
-    options: ExportOptions = { format: 'markdown' }
-  ): Promise<Blob> {
-    try {
-      const markdownContent = this.generateMarkdownContent(presentation, allIssues, upcomingIssues, sprintMetrics, options);
-      const blob = new Blob([markdownContent], { type: 'text/markdown' });
-      return blob;
-    } catch (error) {
-      console.error('Markdown export error:', error);
-      throw new Error('Failed to generate Markdown export');
-    }
+    options: ExportOptions = { format: 'markdown' },
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    return this.export(presentation, allIssues, upcomingIssues, sprintMetrics, options, onProgress);
   }
 
   /**
-   * Export executive metrics only
+   * Export executive metrics
    */
   async exportExecutiveMetrics(
     sprintMetrics: SprintMetrics,
     allIssues: Issue[],
-    options: ExportOptions = { format: 'metrics', executiveFormat: true }
-  ): Promise<Blob> {
-    try {
-      const executiveContent = this.generateExecutiveMetricsContent(sprintMetrics, allIssues, options);
-      const blob = new Blob([executiveContent], { type: 'text/html' });
-      return blob;
-    } catch (error) {
-      console.error('Executive metrics export error:', error);
-      throw new Error('Failed to generate executive metrics export');
-    }
+    options: ExportOptions = { format: 'executive' },
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    // Create a minimal presentation for executive metrics
+    const presentation: GeneratedPresentation = {
+      id: 'executive-metrics',
+      title: 'Executive Metrics Dashboard',
+      slides: [],
+      createdAt: new Date().toISOString(),
+      metadata: {
+        sprintName: 'Executive Summary',
+        totalSlides: 1,
+        hasMetrics: true,
+        demoStoriesCount: 0,
+        customSlidesCount: 0
+      }
+    };
+
+    return this.export(presentation, allIssues, [], sprintMetrics, options, onProgress);
   }
 
   /**
    * Download file to user's device
    */
-  downloadFile(blob: Blob, fileName: string): void {
-    saveAs(blob, fileName);
+  downloadFile(result: ExportResult): void {
+    try {
+      saveAs(result.blob, result.fileName);
+      console.log(`✅ File downloaded: ${result.fileName} (${this.formatFileSize(result.fileSize)})`);
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      throw new Error('Failed to download file');
+    }
   }
 
   /**
-   * Generate file name based on presentation and format
+   * Generate file name for export
    */
   generateFileName(presentation: GeneratedPresentation, format: string, executiveFormat?: boolean): string {
-    const baseName = presentation.title.replace(/[^a-zA-Z0-9]/g, '_');
     const timestamp = new Date().toISOString().split('T')[0];
+    const sprintName = presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_');
+    const formatExt = this.getFormatExtension(format);
     
     if (executiveFormat) {
-      return `${baseName}_Executive_Metrics_${timestamp}.${format}`;
+      return `Executive_Metrics_${sprintName}_${timestamp}.${formatExt}`;
     }
     
-    return `${baseName}_${timestamp}.${format}`;
+    return `Sprint_Review_${sprintName}_${timestamp}.${formatExt}`;
+  }
+
+  /**
+   * Clear export cache
+   */
+  clearCache(): void {
+    this.cache.clear();
+    console.log('🗑️ Export cache cleared');
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): { size: number; entries: string[] } {
+    return {
+      size: this.cache.size,
+      entries: Array.from(this.cache.keys())
+    };
   }
 
   // Private helper methods
-  private async renderSlideContent(
-    doc: jsPDF,
-    slide: PresentationSlide,
-    allIssues: Issue[],
-    upcomingIssues: Issue[],
-    sprintMetrics: SprintMetrics | null | undefined,
-    pageWidth: number | undefined,
-    pageHeight: number | undefined
-  ): Promise<void> {
-    // Implementation will be added based on slide type
-    switch (slide.type) {
-      case 'title':
-        await this.renderTitleSlide(doc, slide, pageWidth, pageHeight);
-        break;
-      case 'summary':
-        await this.renderSummarySlide(doc, slide, pageWidth, pageHeight);
-        break;
-      case 'metrics':
-        await this.renderMetricsSlide(doc, slide, sprintMetrics, allIssues, pageWidth, pageHeight);
-        break;
-      case 'demo-story':
-        await this.renderDemoStorySlide(doc, slide, allIssues, pageWidth, pageHeight);
-        break;
-      case 'corporate':
-        await this.renderCorporateSlide(doc, slide, pageWidth, pageHeight);
-        break;
-      default:
-        await this.renderDefaultSlide(doc, slide, pageWidth, pageHeight);
+
+  private validateExportInputs(presentation: GeneratedPresentation, options: ExportOptions): void {
+    if (!presentation || !presentation.slides || presentation.slides.length === 0) {
+      throw new Error('Invalid presentation: no slides found');
+    }
+
+    if (!options.format) {
+      throw new Error('Export format is required');
+    }
+
+    if (presentation.slides.length > 50) {
+      console.warn('⚠️ Large presentation detected: export may take longer than usual');
     }
   }
 
-  private async renderTitleSlide(doc: jsPDF, slide: PresentationSlide, pageWidth?: number, pageHeight?: number): Promise<void> {
-    // Title slide rendering logic
-    if (pageWidth && pageHeight) {
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Sprint Review Presentation', pageWidth / 2, pageHeight / 2, { align: 'center' });
+  private generateCacheKey(presentation: GeneratedPresentation, options: ExportOptions): string {
+    const key = `${presentation.id}_${options.format}_${options.quality}_${options.interactive}_${presentation.slides.length}`;
+    return btoa(key).replace(/[^a-zA-Z0-9]/g, '');
+  }
+
+  private updateProgress(
+    onProgress: ((progress: ExportProgress) => void) | undefined,
+    progress: ExportProgress
+  ): void {
+    if (onProgress) {
+      onProgress(progress);
     }
   }
 
-  private async renderSummarySlide(doc: jsPDF, slide: PresentationSlide, pageWidth?: number, pageHeight?: number): Promise<void> {
-    // Summary slide rendering logic
-    if (pageWidth && pageHeight) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      const content = typeof slide.content === 'string' ? slide.content : JSON.stringify(slide.content);
-      doc.text(content.substring(0, 200) + '...', 20, 60);
-    }
+  private getFormatExtension(format: string): string {
+    const extensions: Record<string, string> = {
+      'pdf': 'pdf',
+      'html': 'html',
+      'markdown': 'md',
+      'metrics': 'html',
+      'executive': 'html'
+    };
+    return extensions[format] || 'html';
   }
 
-  private async renderMetricsSlide(
-    doc: jsPDF,
-    slide: PresentationSlide,
-    sprintMetrics: SprintMetrics | null | undefined,
-    allIssues: Issue[] | undefined,
-    pageWidth: number | undefined,
-    pageHeight: number | undefined
-  ): Promise<void> {
-    // Metrics slide rendering logic
-    if (pageWidth && pageHeight && sprintMetrics) {
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Sprint Metrics', 20, 60);
-      
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Completed Points: ${sprintMetrics.completedTotalPoints}/${sprintMetrics.estimatedPoints}`, 20, 80);
-      doc.text(`Test Coverage: ${sprintMetrics.testCoverage}%`, 20, 95);
-    }
-  }
-
-  private async renderDemoStorySlide(doc: jsPDF, slide: PresentationSlide, allIssues: Issue[] | undefined, pageWidth: number | undefined, pageHeight: number | undefined): Promise<void> {
-    // Demo story slide rendering logic
-    if (pageWidth && pageHeight) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Demo Story', 20, 60);
-    }
-  }
-
-  private async renderCorporateSlide(doc: jsPDF, slide: PresentationSlide, pageWidth?: number, pageHeight?: number): Promise<void> {
-    // Corporate slide rendering logic
-    if (pageWidth && pageHeight) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Corporate Slide', 20, 60);
-    }
-  }
-
-  private async renderDefaultSlide(doc: jsPDF, slide: PresentationSlide, pageWidth?: number, pageHeight?: number): Promise<void> {
-    // Default slide rendering logic
-    if (pageWidth && pageHeight) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Slide Content', 20, 60);
-    }
-  }
-
-  private addCompanyLogo(doc: jsPDF, logoUrl: string, pageWidth: number, pageHeight: number): void {
-    // Add company logo to bottom right corner
-    // Implementation will be added when we have logo handling
-  }
-
-  private generateHTMLContent(
-    presentation: GeneratedPresentation,
-    allIssues: Issue[],
-    upcomingIssues: Issue[],
-    sprintMetrics?: SprintMetrics | null,
-    options: ExportOptions
-  ): string {
-    // HTML content generation logic
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${presentation.title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-            .slide { page-break-after: always; margin-bottom: 40px; }
-            .slide:last-child { page-break-after: avoid; }
-            h1 { color: #1f2937; font-size: 24px; margin-bottom: 20px; }
-            h2 { color: #374151; font-size: 20px; margin-bottom: 15px; }
-            p { color: #6b7280; line-height: 1.6; }
-          </style>
-        </head>
-        <body>
-          <h1>${presentation.title}</h1>
-          <p>Generated on ${new Date().toLocaleDateString()}</p>
-          <p>Total Slides: ${presentation.metadata.totalSlides}</p>
-        </body>
-      </html>
-    `;
-  }
-
-  private generateMarkdownContent(
-    presentation: GeneratedPresentation,
-    allIssues: Issue[],
-    upcomingIssues: Issue[],
-    sprintMetrics?: SprintMetrics | null,
-    options: ExportOptions
-  ): string {
-    // Markdown content generation logic
-    let markdown = `# ${presentation.title}\n\n`;
-    markdown += `**Generated:** ${new Date().toISOString()}\n`;
-    markdown += `**Sprint:** ${presentation.metadata.sprintName}\n`;
-    markdown += `**Total Slides:** ${presentation.metadata.totalSlides}\n\n`;
-    
-    // Add slides content
-    presentation.slides.forEach((slide, index) => {
-      markdown += `## Slide ${index + 1}: ${slide.title}\n\n`;
-      if (typeof slide.content === 'string') {
-        markdown += slide.content + '\n\n';
-      }
-    });
-    
-    return markdown;
-  }
-
-  private generateExecutiveMetricsContent(
-    sprintMetrics: SprintMetrics,
-    allIssues: Issue[],
-    options: ExportOptions
-  ): string {
-    // Executive metrics content generation logic
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Executive Metrics - ${sprintMetrics.sprintNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
-            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            h1 { color: #1f2937; font-size: 32px; margin-bottom: 30px; text-align: center; }
-            .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
-            .metric-card { background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #3b82f6; }
-            .metric-value { font-size: 36px; font-weight: bold; color: #1f2937; margin-bottom: 8px; }
-            .metric-label { color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>Executive Metrics Summary</h1>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${sprintMetrics.completedTotalPoints}</div>
-                <div class="metric-label">Completed Story Points</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${sprintMetrics.testCoverage}%</div>
-                <div class="metric-label">Test Coverage</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${sprintMetrics.plannedItems}</div>
-                <div class="metric-label">Planned Items</div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }
 
 // Export singleton instance
 export const exportService = ExportService.getInstance(); 
+

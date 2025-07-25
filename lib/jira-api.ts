@@ -421,9 +421,6 @@ export async function fetchJiraIssuesByJQL(jql: string): Promise<SafeJiraIssue[]
           epicName: safeIssue.epicName,
           epicColor: safeIssue.epicColor,
           rawEpicField: issue.fields.epic,
-          rawEpicParentName: issue.fields[JIRA_FIELDS.EPIC_PARENT_NAME],
-          rawEpicLink: issue.fields[JIRA_FIELDS.EPIC_LINK],
-          rawEpicName: issue.fields[JIRA_FIELDS.EPIC_NAME],
           parent: issue.fields.parent
         });
       }

@@ -111,102 +111,123 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
     ? "text-base sm:text-lg lg:text-xl xl:text-2xl leading-relaxed" 
     : "text-xs sm:text-sm lg:text-base leading-relaxed"
 
-  // Responsive behavior testing
-  const { isMobile, isTablet, isDesktop } = useResponsiveTest();
+  // Responsive behavior testing with error handling
+  let responsiveState = { isMobile: false, isTablet: false, isDesktop: false };
+  try {
+    responsiveState = useResponsiveTest();
+  } catch (error) {
+    console.warn('Responsive test failed:', error);
+  }
+
+  const { isMobile, isTablet, isDesktop } = responsiveState;
 
   // Responsive fallbacks for edge cases
   const mobileFallback = isMobile ? "overflow-y-auto max-h-full" : "";
   const tabletFallback = isTablet ? "overflow-x-hidden" : "";
   const desktopFallback = isDesktop ? "overflow-visible" : "";
 
-  switch (slide.type) {
-    case "title":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <TitleSlide slide={slide} containerClass={containerClass} titleClass={titleClass} />
-        </SlideBackground>
-      )
+  try {
+    switch (slide.type) {
+      case "title":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <TitleSlide slide={slide} containerClass={containerClass} titleClass={titleClass} />
+          </SlideBackground>
+        )
 
-    case "summary":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <SummarySlide
-            slide={slide}
-            containerClass={containerClass}
-            titleClass={titleClass}
-            contentClass={contentClass}
-            allIssues={allIssues}
-            isFullscreen={isFullscreen}
-          />
-        </SlideBackground>
-      )
+      case "summary":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <SummarySlide
+              slide={slide}
+              containerClass={containerClass}
+              titleClass={titleClass}
+              contentClass={contentClass}
+              allIssues={allIssues}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
 
-    case "metrics":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <MetricsSlide
-            slide={slide}
-            containerClass={containerClass}
-            titleClass={titleClass}
-            sprintMetrics={sprintMetrics}
-            allIssues={allIssues}
-            isFullscreen={isFullscreen}
-          />
-        </SlideBackground>
-      )
+      case "metrics":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <MetricsSlide
+              slide={slide}
+              containerClass={containerClass}
+              titleClass={titleClass}
+              sprintMetrics={sprintMetrics}
+              allIssues={allIssues}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
 
-    case "demo-story":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <DemoStorySlide
-            slide={slide}
-            issues={allIssues}
-            containerClass={containerClass}
-            isFullscreen={isFullscreen}
-          />
-        </SlideBackground>
-      )
+      case "demo-story":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <DemoStorySlide
+              slide={slide}
+              issues={allIssues}
+              containerClass={containerClass}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
 
-    case "corporate":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <CorporateSlide
-            slide={slide}
-            containerClass={containerClass}
-            isFullscreen={isFullscreen}
-          />
-        </SlideBackground>
-      )
+      case "corporate":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <CorporateSlide
+              slide={slide}
+              containerClass={containerClass}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
 
-    case "review-legend":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <ReviewLegend
-            sprintMetrics={sprintMetrics}
-            issues={allIssues}
-            isFullscreen={isFullscreen}
-          />
-        </SlideBackground>
-      )
+      case "review-legend":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <ReviewLegend
+              sprintMetrics={sprintMetrics}
+              issues={allIssues}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
 
-    case "custom":
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <CustomSlide slide={slide} containerClass={containerClass} titleClass={titleClass} />
-        </SlideBackground>
-      )
+      case "custom":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <CustomSlide slide={slide} containerClass={containerClass} titleClass={titleClass} />
+          </SlideBackground>
+        )
 
-    default:
-      return (
-        <SlideBackground isFullscreen={isFullscreen}>
-          <DefaultSlide
-            slide={slide}
-            containerClass={containerClass}
-            titleClass={titleClass}
-            contentClass={contentClass}
-          />
-        </SlideBackground>
-      )
+      default:
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <DefaultSlide
+              slide={slide}
+              containerClass={containerClass}
+              titleClass={titleClass}
+              contentClass={contentClass}
+            />
+          </SlideBackground>
+        )
+    }
+  } catch (error) {
+    console.error('Error rendering slide:', error);
+    return (
+      <SlideBackground isFullscreen={isFullscreen}>
+        <div className={`${containerClass} flex items-center justify-center`}>
+          <div className="text-center">
+            <h2 className={titleClass}>Error Loading Slide</h2>
+            <p className={contentClass}>There was an error rendering this slide.</p>
+          </div>
+        </div>
+      </SlideBackground>
+    );
   }
 }
 
@@ -296,20 +317,55 @@ function SummarySlide({ slide, containerClass, titleClass, contentClass, allIssu
             {/* Content Area - Scrollable */}
             <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-10rem)]">
               <div className="prose max-w-full break-words">
-                <ReactMarkdown
-                  components={{
-                    h1: ({ children }) => <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2 sm:mb-3">{children}</h3>,
-                    p: ({ children }) => <p className={`${contentClass} text-gray-700 mb-3 sm:mb-4`}>{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y-2">{children}</ul>,
-                    li: ({ children }) => <li className={`${contentClass} text-gray-700`}>{children}</li>,
-                    strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
-                    em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
-                  }}
-                >
-                  {slide.content}
-                </ReactMarkdown>
+                {typeof slide.content === 'string' ? (
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ children }) => <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2 sm:mb-3">{children}</h3>,
+                      p: ({ children }) => <p className={`${contentClass} text-gray-700 mb-3 sm:mb-4`}>{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc list-inside text-gray-700 mb-4 sm:mb-6 space-y-1 sm:space-y2">{children}</ul>,
+                      li: ({ children }) => <li className={`${contentClass} text-gray-700`}>{children}</li>,
+                      strong: ({ children }) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                      em: ({ children }) => <em className="text-gray-600 italic">{children}</em>,
+                    }}
+                  >
+                    {slide.content}
+                  </ReactMarkdown>
+                ) : (
+                  <div className="space-y-4">
+                    {slide.content.accomplishments && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Accomplishments</h3>
+                        <div className={`${contentClass} text-gray-700`}>
+                          <ReactMarkdown>
+                            {slide.content.accomplishments}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    {slide.content.businessValue && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Business Value</h3>
+                        <div className={`${contentClass} text-gray-700`}>
+                          <ReactMarkdown>
+                            {slide.content.businessValue}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    {slide.content.userImpact && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">User Impact</h3>
+                        <div className={`${contentClass} text-gray-700`}>
+                          <ReactMarkdown>
+                            {slide.content.userImpact}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -744,7 +800,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
               </h3>
               
               <div className={`flex items-center justify-center ${isFullscreen ? 'p-2' : 'p-1'}`}>
-                {screenshot ? (
+                {screenshot && !imageError ? (
                   <img
                     src={screenshot}
                     alt="Demo screenshot"
@@ -828,6 +884,71 @@ function CustomSlide({ slide, containerClass, titleClass }: any) {
   )
 }
 
+// Utility: Deeply check for objects and convert ADF-like objects to plain text
+function isADFObject(obj: any): boolean {
+  return obj && typeof obj === 'object' && obj.type === 'doc' && Array.isArray(obj.content);
+}
+
+function adfToPlainText(adf: any): string {
+  if (!adf || !adf.content) return '';
+  return adf.content.map((node: any) => {
+    if (node.type === 'paragraph') {
+      return node.content ? node.content.map((child: any) => child.text || '').join('') : '';
+    }
+    return '';
+  }).join('\n\n');
+}
+
+function safeRenderContent(content: any): React.ReactNode {
+  // Handle null/undefined
+  if (content === null || content === undefined) {
+    return null;
+  }
+
+  // Handle strings - render with ReactMarkdown
+  if (typeof content === 'string') {
+    return <ReactMarkdown>{content}</ReactMarkdown>;
+  }
+
+  // Handle numbers, booleans - convert to string
+  if (typeof content === 'number' || typeof content === 'boolean') {
+    return <ReactMarkdown>{String(content)}</ReactMarkdown>;
+  }
+
+  // Handle objects
+  if (typeof content === 'object') {
+    // Handle ADF objects specifically
+    if (isADFObject(content)) {
+      const plainText = adfToPlainText(content);
+      console.warn('ADF object detected and converted to plain text:', content);
+      return <ReactMarkdown>{plainText}</ReactMarkdown>;
+    }
+
+    // Handle arrays
+    if (Array.isArray(content)) {
+      return content.map((item, index) => (
+        <div key={index}>
+          {safeRenderContent(item)}
+        </div>
+      ));
+    }
+
+    // Handle other objects - convert to JSON string
+    try {
+      const jsonString = JSON.stringify(content, null, 2);
+      console.warn('Object content detected and converted to JSON string:', content);
+      return <ReactMarkdown>{`\`\`\`json\n${jsonString}\n\`\`\``}</ReactMarkdown>;
+    } catch (error) {
+      console.error('Failed to stringify object content:', content, error);
+      return <ReactMarkdown>{'[Unable to render object content]'}</ReactMarkdown>;
+    }
+  }
+
+  // Fallback for any other types
+  console.warn('Unknown content type detected:', typeof content, content);
+  return <ReactMarkdown>{String(content)}</ReactMarkdown>;
+}
+
 function DefaultSlide({ slide, containerClass, titleClass, contentClass }: any) {
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
@@ -842,30 +963,12 @@ function DefaultSlide({ slide, containerClass, titleClass, contentClass }: any) 
 
         <div className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none ${contentClass} overflow-y-auto max-h-[calc(100vh-10rem)]`}>
           <div className="prose max-w-full break-words">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-5 lg:mb-6 border-b border-gray-200 pb-2 break-words">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-xl sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-3 sm:mb-3 lg:mb-4 mt-6 sm:mt-7 lg:mt-8 text-ca-blue-700 break-words">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-lg sm:text-lg lg:text-xl font-medium text-gray-700 mb-2 sm:mb-2 lg:mb-3 mt-4 sm:mt-5 lg:mt-6 break-words">{children}</h3>,
-                ul: ({ children }) => <ul className="space-y-1 sm:space-y-1.5 lg:space-y-2 ml-4 sm:ml-5 lg:ml-6">{children}</ul>,
-                li: ({ children }) => (
-                  <li className="flex items-start space-x-2">
-                    <span className="text-ca-blue-600 mt-1 font-bold">•</span>
-                    <span className="text-gray-800 break-words">{children}</span>
-                  </li>
-                ),
-                p: ({ children }) => <p className="mb-3 sm:mb-3 lg:mb-4 text-gray-700 leading-relaxed break-words">{children}</p>,
-                strong: ({ children }) => <strong className="font-bold text-gray-900 break-words">{children}</strong>,
-                em: ({ children }) => <em className="text-gray-600 italic break-words">{children}</em>,
-              }}
-            >
-              {slide.content}
-            </ReactMarkdown>
+            {safeRenderContent(slide.content)}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function calculateQualityScore(checklist: Record<string, string>): number {
@@ -1512,15 +1615,19 @@ function useResponsiveTest() {
 
   useEffect(() => {
     const checkScreenSize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 640);
-      setIsTablet(width >= 640 && width < 1024);
-      setIsDesktop(width >= 1024);
+      if (typeof window !== 'undefined') {
+        const width = window.innerWidth;
+        setIsMobile(width < 640);
+        setIsTablet(width >= 640 && width < 1024);
+        setIsDesktop(width >= 1024);
+      }
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkScreenSize);
+      return () => window.removeEventListener('resize', checkScreenSize);
+    }
   }, []);
 
   return { isMobile, isTablet, isDesktop };

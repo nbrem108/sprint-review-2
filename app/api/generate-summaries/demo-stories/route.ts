@@ -39,6 +39,38 @@ function formatSummary(raw: string): string {
   return raw.trim()
 }
 
+// Utility function to safely convert any content to string
+function safeContentToString(content: any): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  if (content === null || content === undefined) {
+    return '';
+  }
+  
+  if (typeof content === 'object') {
+    // Handle ADF objects
+    if (content.type === 'doc' && Array.isArray(content.content)) {
+      return content.content.map((node: any) => {
+        if (node.type === 'paragraph' && node.content) {
+          return node.content.map((child: any) => child.text || '').join('');
+        }
+        return '';
+      }).join('\n\n');
+    }
+    
+    // Handle other objects by converting to JSON string
+    try {
+      return JSON.stringify(content);
+    } catch {
+      return '[Object content]';
+    }
+  }
+  
+  return String(content);
+}
+
 async function generateDemoStoriesSummaries(data: DemoStoriesRequest): Promise<SummaryResponse> {
   const summaries: Record<string, string> = {}
 
@@ -59,14 +91,14 @@ Line 6: Success Metrics — one sentence on how success will be measured or what
 Line 7: Competitive Differentiation — one sentence on what makes this feature unique or better than alternatives.
 
 Here are the ticket details:
-- Summary: ${story.summary}
-- Description: ${story.description || "(none)"}
-- Release Notes: ${story.releaseNotes || "(none)"}
-- Type: ${story.issueType || "(none)"}
-- Status: ${story.status || "(none)"}
-- Story Points: ${story.storyPoints || "(none)"}
-- Assignee: ${story.assignee || "(none)"}
-- Epic: ${story.epicName || "(none)"}
+- Summary: ${safeContentToString(story.summary)}
+- Description: ${safeContentToString(story.description || "(none)")}
+- Release Notes: ${safeContentToString(story.releaseNotes || "(none)")}
+- Type: ${safeContentToString(story.issueType || "(none)")}
+- Status: ${safeContentToString(story.status || "(none)")}
+- Story Points: ${safeContentToString(story.storyPoints || "(none)")}
+- Assignee: ${safeContentToString(story.assignee || "(none)")}
+- Epic: ${safeContentToString(story.epicName || "(none)")}
 
 IMPORTANT: Return exactly 7 lines. Each line should be on its own line. Use clear stakeholder language. Do not include bullet points, markdown formatting, or section headers.`
 

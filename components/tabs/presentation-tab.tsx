@@ -20,12 +20,24 @@ import {
   Trash2,
   RefreshCw,
   FileCode,
+  TrendingUp,
+  TestTube,
+  Zap,
 } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
 import { PresentationMode } from "@/components/presentation/presentation-mode"
 import { getEpicBreakdown, type EpicBreakdown, isIssueCompleted } from "@/lib/utils"
 import { calculateQualityScore } from "@/lib/utils"
+import { ExportProgressModal } from '../export/export-progress-modal'
+import { ExportOptionsPanel } from '../export/export-options-panel'
+import { CacheManagementDashboard } from '../export/cache-management-dashboard'
+import { TestingDashboard } from '../export/testing-dashboard'
+import { ExportOptions, ExportProgress, ExportResult } from '@/lib/export-service'
+import { QualityReport } from '@/lib/export-quality-assurance'
+import { ExportError } from '@/lib/export-error-handler'
+import { exportService } from '@/lib/export-service'
+import { OptimizationDashboard } from '../export/optimization-dashboard';
 
 interface PresentationSlide {
   id: string
@@ -51,13 +63,70 @@ interface GeneratedPresentation {
   }
 }
 
+// Utility function to safely convert any content to string
+function safeContentToString(content: any): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  if (content === null || content === undefined) {
+    return '';
+  }
+  
+  if (typeof content === 'object') {
+    // Handle ADF objects
+    if (content.type === 'doc' && Array.isArray(content.content)) {
+      return content.content.map((node: any) => {
+        if (node.type === 'paragraph' && node.content) {
+          return node.content.map((child: any) => child.text || '').join('');
+        }
+        return '';
+      }).join('\n\n');
+    }
+    
+    // Handle other objects by converting to JSON string
+    try {
+      return JSON.stringify(content);
+    } catch {
+      return '[Object content]';
+    }
+  }
+  
+  return String(content);
+}
+
 export function PresentationTab() {
   const { state, dispatch } = useSprintContext()
   const { toast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isExportingDigest, setIsExportingDigest] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  
+  // Enhanced export state
+  const [exportOptions, setExportOptions] = useState<ExportOptions>({
+    format: 'pdf',
+    quality: 'medium',
+    includeImages: true,
+    compression: true,
+    interactive: true
+  })
+  const [exportProgress, setExportProgress] = useState<ExportProgress>({
+    current: 0,
+    total: 100,
+    stage: 'preparing',
+    message: '',
+    percentage: 0
+  })
+  const [exportResult, setExportResult] = useState<ExportResult | null>(null)
+  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null)
+  const [exportError, setExportError] = useState<ExportError | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [showExportOptions, setShowExportOptions] = useState(false)
+  const [showCacheDashboard, setShowCacheDashboard] = useState(false)
+  const [showTestingDashboard, setShowTestingDashboard] = useState(false)
+  const [showOptimizationDashboard, setShowOptimizationDashboard] = useState(false)
 
   // Use the persisted presentation from context
   const presentation = state.generatedPresentation
@@ -195,10 +264,28 @@ ${state.demoStories
           const summary = state.summaries.demoStories[storyId]
 
           if (story && summary) {
+            // Ensure all story fields are safely converted to strings
+            const safeStoryContent = `# ${story.key}: ${safeContentToString(story.summary)}
+
+${safeContentToString(summary)}
+
+## Story Details
+- **Status:** ${safeContentToString(story.status)}
+- **Type:** ${safeContentToString(story.issueType)}
+- **Points:** ${story.storyPoints ? safeContentToString(story.storyPoints) : "Not estimated"}
+- **Assignee:** ${story.assignee ? safeContentToString(story.assignee) : "Unassigned"}
+- **Epic:** ${story.epicName ? safeContentToString(story.epicName) : "No epic"}
+
+${story.description ? `## Description
+${safeContentToString(story.description)}` : ''}
+
+${story.releaseNotes ? `## Release Notes
+${safeContentToString(story.releaseNotes)}` : ''}`
+
             slides.push({
               id: `slide-${slideOrder}`,
               title: `Demo: ${story.key}`,
-              content: summary,
+              content: safeStoryContent,
               type: "demo-story",
               order: slideOrder++,
               storyId: storyId, // Add the specific story ID
@@ -474,33 +561,35 @@ ${state.demoStories
     }
   }
 
-  const exportExecutiveMetrics = async () => {
-    if (!state.metrics) {
+  const exportDigest = async () => {
+    if (!presentation) {
       toast({
-        title: "No Metrics",
-        description: "No metrics data available for export.",
+        title: "No presentation available",
+        description: "Please generate a presentation first.",
         variant: "destructive",
       })
       return
     }
 
-    setIsExporting(true)
+    setIsExportingDigest(true)
     try {
-      // Call API endpoint for executive metrics export
-      const response = await fetch('/api/export/metrics', {
+      // Call API endpoint for Digest export
+      const response = await fetch('/api/export/digest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sprintMetrics: state.metrics,
+          presentation,
           allIssues: state.issues,
-          options: { format: 'metrics', executiveFormat: true }
+          upcomingIssues: state.upcomingIssues || [],
+          sprintMetrics: state.metrics,
+          options: { format: 'digest', quality: 'high' }
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to export executive metrics')
+        throw new Error('Failed to export Digest')
       }
 
       // Download the file
@@ -508,21 +597,79 @@ ${state.demoStories
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `Sprint_${state.metrics.sprintNumber}_Executive_Metrics_${new Date().toISOString().split('T')[0]}.html`
+      a.download = `Sprint_Review_Digest_${presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
       toast({
-        title: "Executive Metrics Export",
-        description: "Executive metrics exported successfully!",
+        title: "Digest Export",
+        description: "Sprint review digest exported successfully!",
       })
     } catch (error) {
       console.error("Export error:", error)
       toast({
         title: "Export Failed",
-        description: "Failed to export executive metrics. Please try again.",
+        description: "Failed to export digest. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExportingDigest(false)
+    }
+  }
+
+  const exportExecutiveMetrics = async () => {
+    if (!presentation) {
+      toast({
+        title: "No presentation available",
+        description: "Please generate a presentation first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      // Call API endpoint for executive summary export
+      const response = await fetch('/api/export/executive', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues: state.issues,
+          upcomingIssues: state.upcomingIssues || [],
+          sprintMetrics: state.metrics,
+          options: { format: 'executive', quality: 'high' }
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export executive summary')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Executive_Summary_${presentation.metadata.sprintName}_${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Executive Summary Export",
+        description: "Executive summary exported successfully!",
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export executive summary. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -539,23 +686,119 @@ ${state.demoStories
     })
   }
 
-  const calculateQualityScore = (checklist: Record<string, string>): number => {
-    const scores = Object.values(checklist)
-      .map((value) => {
-        switch (value) {
-          case "yes":
-            return 1
-          case "partial":
-            return 0.5
-          case "no":
-            return 0
-          case "na":
-            return null
-          default:
-            return 0
-        }
+  // Enhanced export functions
+  const handleExport = async () => {
+    if (!presentation) {
+      toast({
+        title: "No presentation to export",
+        description: "Please generate a presentation first.",
+        variant: "destructive",
       })
-      .filter((score): score is number => score !== null)
+      return
+    }
+
+    setShowExportModal(true)
+    setExportError(null)
+    setExportResult(null)
+    setQualityReport(null)
+
+    try {
+      const result = await exportService.export(
+        presentation,
+        state.issues,
+        state.upcomingIssues || [],
+        state.metrics,
+        exportOptions,
+        (progress) => {
+          setExportProgress(progress)
+        }
+      )
+
+      setExportResult(result)
+      
+      // Get quality report
+      try {
+        const qualityReport = await import('@/lib/export-quality-assurance').then(
+          module => module.exportQualityAssurance.validateExport(result, presentation, exportOptions)
+        )
+        setQualityReport(qualityReport)
+      } catch (error) {
+        console.warn('Quality check failed:', error)
+      }
+
+      // Download the file
+      exportService.downloadFile(result)
+
+      toast({
+        title: "Export successful",
+        description: `${exportOptions.format.toUpperCase()} has been downloaded successfully.`,
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      setExportError({
+        code: 'EXPORT_ERROR',
+        message: error instanceof Error ? error.message : 'An error occurred during export.',
+        details: 'Export process failed',
+        recoverable: true,
+        retryCount: 0,
+        timestamp: new Date().toISOString()
+      })
+      
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "An error occurred during export.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRetryExport = () => {
+    setExportError(null)
+    handleExport()
+  }
+
+  const handleDownload = (result: ExportResult) => {
+    exportService.downloadFile(result)
+  }
+
+  const openExportOptions = () => {
+    setShowExportOptions(true)
+  }
+
+  const openCacheDashboard = () => {
+    setShowCacheDashboard(true)
+  }
+
+  const openTestingDashboard = () => {
+    setShowTestingDashboard(true)
+  }
+
+  const openOptimizationDashboard = () => {
+    setShowOptimizationDashboard(true)
+  }
+
+  const calculateQualityScore = (checklist: Record<string, string>): number => {
+    const scores: number[] = []
+    
+    Object.values(checklist).forEach((value) => {
+      switch (value) {
+        case "yes":
+          scores.push(1)
+          break
+        case "partial":
+          scores.push(0.5)
+          break
+        case "no":
+          scores.push(0)
+          break
+        case "na":
+          // Skip NA values
+          break
+        default:
+          scores.push(0)
+          break
+      }
+    })
 
     if (scores.length === 0) return 0
     const average = scores.reduce((sum, score) => sum + score, 0) / scores.length
@@ -779,12 +1022,40 @@ ${state.demoStories
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={exportDigest}
+                    disabled={isExportingDigest}
+                    className="gap-2 bg-transparent"
+                  >
+                    {isExportingDigest ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    Export Digest
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={exportExecutiveMetrics}
                     disabled={isExporting}
                     className="gap-2 bg-transparent"
                   >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-                    Executive Metrics
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
+                    Executive Summary
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openTestingDashboard}
+                    className="gap-2 bg-transparent"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    Testing
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openOptimizationDashboard}
+                    className="gap-2 bg-transparent"
+                  >
+                    <Zap className="h-4 w-4" />
+                    Optimization
                   </Button>
                   <Button
                     variant="outline"
@@ -903,6 +1174,67 @@ ${state.demoStories
           </div>
         </CardContent>
       </Card>
+
+      {/* Enhanced Export UI Components */}
+      {showExportOptions && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Export Configuration</h3>
+              <Button variant="outline" size="sm" onClick={() => setShowExportOptions(false)}>
+                Close
+              </Button>
+            </div>
+            <ExportOptionsPanel
+              options={exportOptions}
+              onOptionsChange={setExportOptions}
+              onExport={handleExport}
+              isExporting={isExporting}
+              estimatedFileSize={presentation ? presentation.slides.length * 1024 * 1024 : undefined}
+              estimatedTime={presentation ? presentation.slides.length * 2 : undefined}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Export Progress Modal */}
+      <ExportProgressModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        progress={exportProgress}
+        result={exportResult || undefined}
+        qualityReport={qualityReport || undefined}
+        error={exportError || undefined}
+        onRetry={handleRetryExport}
+        onDownload={handleDownload}
+        options={exportOptions}
+      />
+
+      {/* Cache Management Dashboard */}
+      <CacheManagementDashboard
+        isOpen={showCacheDashboard}
+        onClose={() => setShowCacheDashboard(false)}
+      />
+
+      {/* Testing Dashboard */}
+      {presentation && (
+        <TestingDashboard
+          isOpen={showTestingDashboard}
+          onClose={() => setShowTestingDashboard(false)}
+          presentation={presentation}
+          options={exportOptions}
+        />
+      )}
+
+      {/* Optimization Dashboard */}
+      {presentation && (
+        <OptimizationDashboard
+          isOpen={showOptimizationDashboard}
+          onClose={() => setShowOptimizationDashboard(false)}
+          presentation={presentation}
+          options={exportOptions}
+        />
+      )}
     </div>
   )
 }

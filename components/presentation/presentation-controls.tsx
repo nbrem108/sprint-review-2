@@ -23,6 +23,7 @@ interface PresentationControlsProps {
   isFullscreen: boolean
   isExporting: boolean
   isExportingMarkdown: boolean
+  isExportingDigest: boolean
   onPrevSlide: () => void
   onNextSlide: () => void
   onTogglePlay: () => void
@@ -30,6 +31,7 @@ interface PresentationControlsProps {
   onExportHTML: () => void
   onExportMarkdown: () => void
   onExportPDF: () => void
+  onExportDigest: () => void
   onShowShortcuts: () => void
   onGoToSlide: (index: number) => void
 }
@@ -41,6 +43,7 @@ export function PresentationControls({
   isFullscreen,
   isExporting,
   isExportingMarkdown,
+  isExportingDigest,
   onPrevSlide,
   onNextSlide,
   onTogglePlay,
@@ -48,6 +51,7 @@ export function PresentationControls({
   onExportHTML,
   onExportMarkdown,
   onExportPDF,
+  onExportDigest,
   onShowShortcuts,
   onGoToSlide,
 }: PresentationControlsProps) {
@@ -139,6 +143,17 @@ export function PresentationControls({
             >
               {isExportingMarkdown ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
               <span className="hidden sm:inline">MD</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportDigest}
+              disabled={isExportingDigest}
+              className="gap-2 bg-transparent"
+            >
+              {isExportingDigest ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              <span className="hidden sm:inline">Digest</span>
             </Button>
           </div>
         </div>

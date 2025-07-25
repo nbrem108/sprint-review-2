@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +23,13 @@ export function SessionManager() {
   const { toast } = useToast()
   const [importData, setImportData] = useState("")
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [sessionId, setSessionId] = useState<string>("Loading...")
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+    setSessionId(state.sessionId)
+  }, [state.sessionId])
 
   const handleExport = () => {
     try {
@@ -128,7 +135,7 @@ export function SessionManager() {
           )}
 
           <div className="text-xs text-muted-foreground">
-            Session ID: <code className="bg-muted px-1 rounded">{state.sessionId}</code>
+            Session ID: <code className="bg-muted px-1 rounded">{sessionId}</code>
           </div>
         </div>
 

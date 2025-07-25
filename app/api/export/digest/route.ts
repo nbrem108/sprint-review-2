@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exportService } from '@/lib/export-service'
+import { DigestExportRenderer } from '@/lib/digest-export-renderer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,32 +19,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate HTML using the export service
-    const result = await exportService.export(
+    // Create digest renderer directly (server-side only)
+    const digestRenderer = new DigestExportRenderer()
+
+    // Generate Digest directly without going through the export service
+    const result = await digestRenderer.render(
       presentation,
       allIssues || [],
       upcomingIssues || [],
       sprintMetrics,
-      { ...options, format: 'html' }
+      { ...options, format: 'digest' }
     )
 
     // Convert blob to buffer for response
     const arrayBuffer = await result.blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Return HTML as downloadable file
+    // Return Digest as downloadable file
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${result.fileName}"`,
         'Content-Length': buffer.length.toString(),
       },
     })
   } catch (error) {
-    console.error('HTML export error:', error)
+    console.error('Digest export error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate HTML export' },
+      { error: 'Failed to generate Digest export' },
       { status: 500 }
     )
   }

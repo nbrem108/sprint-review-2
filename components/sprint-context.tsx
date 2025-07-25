@@ -54,16 +54,16 @@ interface SprintMetrics {
   completedTotalPoints: number
   completedAdjustedPoints: number
   qualityChecklist: {
-    sprintCommitment: "yes" | "no" | "partial"
-    velocity: "yes" | "no" | "partial"
-    testCoverage: "yes" | "no" | "partial"
-    testAutomation: "yes" | "no" | "partial"
-    uiUxStandards: "yes" | "no" | "partial"
-    internationalFirst: "yes" | "no" | "partial"
-    mobileResponsive: "yes" | "no" | "partial"
-    featurePermissions: "yes" | "no" | "partial"
-    releaseNotes: "yes" | "no" | "partial"
-    howToVideos: "yes" | "no" | "na"
+    sprintCommitment: "yes" | "no" | "partial" | "na"
+    velocity: "yes" | "no" | "partial" | "na"
+    testCoverage: "yes" | "no" | "partial" | "na"
+    testAutomation: "yes" | "no" | "partial" | "na"
+    uiUxStandards: "yes" | "no" | "partial" | "na"
+    internationalFirst: "yes" | "no" | "partial" | "na"
+    mobileResponsive: "yes" | "no" | "partial" | "na"
+    featurePermissions: "yes" | "no" | "partial" | "na"
+    releaseNotes: "yes" | "no" | "partial" | "na"
+    howToVideos: "yes" | "no" | "partial" | "na"
   }
 }
 
@@ -159,7 +159,13 @@ type SprintAction =
 // persistence helpers
 const STORAGE_KEY = "sprint-review-session"
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000 // 24h
-const generateSessionId = () => `session-${Date.now()}-${Math.random().toString(36).slice(2,9)}`
+const generateSessionId = () => {
+  // Use a stable session ID to avoid hydration mismatches
+  if (typeof window === 'undefined') {
+    return 'session-server-side'
+  }
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2,9)}`
+}
 
 // Utility function to ensure corporate slides are unique by ID
 const deduplicateCorporateSlides = (slides: CorporateSlide[]): CorporateSlide[] => {

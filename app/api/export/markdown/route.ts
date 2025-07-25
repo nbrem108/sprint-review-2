@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate Markdown using the export service
-    const markdownBlob = await exportService.exportToMarkdown(
+    const result = await exportService.export(
       presentation,
       allIssues || [],
       upcomingIssues || [],
@@ -29,18 +29,15 @@ export async function POST(request: NextRequest) {
     )
 
     // Convert blob to buffer for response
-    const arrayBuffer = await markdownBlob.arrayBuffer()
+    const arrayBuffer = await result.blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-
-    // Generate filename
-    const fileName = exportService.generateFileName(presentation, 'md')
 
     // Return Markdown as downloadable file
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${result.fileName}"`,
         'Content-Length': buffer.length.toString(),
       },
     })

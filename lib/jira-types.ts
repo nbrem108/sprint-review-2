@@ -237,6 +237,16 @@ export function extractSafeSprint(sprint: JiraSprint): SafeJiraSprint {
   }
 }
 
+function adfToPlainText(adf: any): string {
+  if (!adf || !adf.content) return '';
+  return adf.content.map((node: any) => {
+    if (node.type === 'paragraph') {
+      return node.content ? node.content.map((child: any) => child.text || '').join('') : '';
+    }
+    return '';
+  }).join('\n\n');
+}
+
 export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
   // Enhanced epic extraction logic
   let epicKey: string | undefined = undefined;
@@ -277,7 +287,7 @@ export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
     id: issue.id,
     key: issue.key,
     summary: issue.fields.summary,
-    description: issue.fields.description,
+    description: typeof issue.fields.description === 'object' ? adfToPlainText(issue.fields.description) : issue.fields.description,
     status: issue.fields.status.name,
     assignee: issue.fields.assignee?.displayName,
     storyPoints: issue.fields[JIRA_FIELDS.STORY_POINTS],
@@ -287,7 +297,7 @@ export function extractSafeIssue(issue: JiraIssue): SafeJiraIssue {
     epicKey,
     epicName,
     epicColor,
-    releaseNotes: issue.fields[JIRA_FIELDS.RELEASE_NOTES],
+    releaseNotes: typeof issue.fields[JIRA_FIELDS.RELEASE_NOTES] === 'object' ? adfToPlainText(issue.fields[JIRA_FIELDS.RELEASE_NOTES]) : issue.fields[JIRA_FIELDS.RELEASE_NOTES],
   }
 }
 

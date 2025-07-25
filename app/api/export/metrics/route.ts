@@ -17,30 +17,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Create a mock presentation for metrics export
+    const mockPresentation = {
+      id: 'metrics-export',
+      title: `Sprint ${sprintMetrics.sprintNumber} Metrics`,
+      slides: [],
+      createdAt: new Date().toISOString(),
+      metadata: {
+        sprintName: `Sprint ${sprintMetrics.sprintNumber}`,
+        totalSlides: 0,
+        hasMetrics: true,
+        demoStoriesCount: 0,
+        customSlidesCount: 0
+      }
+    }
+
     // Generate executive metrics using the export service
-    const metricsBlob = await exportService.exportExecutiveMetrics(
-      sprintMetrics,
+    const result = await exportService.export(
+      mockPresentation,
       allIssues || [],
-      { ...options, format: 'metrics', executiveFormat: true }
+      [],
+      sprintMetrics,
+      { ...options, format: 'executive' }
     )
 
     // Convert blob to buffer for response
-    const arrayBuffer = await metricsBlob.arrayBuffer()
+    const arrayBuffer = await result.blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-
-    // Generate filename
-    const fileName = exportService.generateFileName(
-      { title: `Sprint_${sprintMetrics.sprintNumber}_Metrics` } as any, 
-      'html', 
-      true
-    )
 
     // Return executive metrics as downloadable file
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${result.fileName}"`,
         'Content-Length': buffer.length.toString(),
       },
     })
