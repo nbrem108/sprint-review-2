@@ -5,6 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Presentation,
   FileDown,
   Eye,
@@ -23,6 +29,7 @@ import {
   TrendingUp,
   TestTube,
   Zap,
+  ChevronDown,
 } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
@@ -101,6 +108,7 @@ export function PresentationTab() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isExportingDigest, setIsExportingDigest] = useState(false)
+  const [isExportingAdvancedDigest, setIsExportingAdvancedDigest] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   
@@ -619,6 +627,65 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
     }
   }
 
+  const exportAdvancedDigest = async () => {
+    if (!presentation) {
+      toast({
+        title: "No presentation available",
+        description: "Please generate a presentation first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsExportingAdvancedDigest(true)
+    try {
+      // Call API endpoint for Advanced Digest export
+      const response = await fetch('/api/generate-advanced-digest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues: state.issues,
+          upcomingIssues: state.upcomingIssues || [],
+          sprintMetrics: state.metrics,
+          options: { format: 'advanced-digest', quality: 'high' },
+          demoStoryScreenshots: state.demoStoryScreenshots
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export Advanced Digest')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Advanced_Sprint_Review_Digest_${presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Advanced Digest Export",
+        description: "Advanced sprint review digest exported successfully!",
+      })
+    } catch (error) {
+      console.error("Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: "Failed to export advanced digest. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExportingAdvancedDigest(false)
+    }
+  }
+
   const exportExecutiveMetrics = async () => {
     if (!presentation) {
       toast({
@@ -877,6 +944,7 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
         upcomingIssues={state.upcomingIssues}
         sprintMetrics={state.metrics}
         corporateSlides={state.corporateSlides}
+        demoStoryScreenshots={state.demoStoryScreenshots}
         onClose={() => setIsPreviewMode(false)}
       />
     )
@@ -904,7 +972,7 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsPreviewMode(true)} className="gap-2">
               <Eye className="h-4 w-4" />
-              Preview
+              Present
             </Button>
             <Button onClick={generatePresentation} disabled={isGenerating} className="gap-2">
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -987,58 +1055,96 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setIsPreviewMode(true)} className="gap-2">
                     <Eye className="h-4 w-4" />
-                    Preview
+                    Live Preview
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportToPDF}
-                    disabled={isExporting}
-                    className="gap-2 bg-transparent"
-                  >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    Export PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportToHTML}
-                    disabled={isExporting}
-                    className="gap-2 bg-transparent"
-                  >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode className="h-4 w-4" />}
-                    Export HTML
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportToMarkdown}
-                    disabled={isExporting}
-                    className="gap-2 bg-transparent"
-                  >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                    Export MD
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportDigest}
-                    disabled={isExportingDigest}
-                    className="gap-2 bg-transparent"
-                  >
-                    {isExportingDigest ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                    Export Digest
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportExecutiveMetrics}
-                    disabled={isExporting}
-                    className="gap-2 bg-transparent"
-                  >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
-                    Executive Summary
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                        <FileDown className="h-4 w-4" />
+                        Export
+                        <ChevronDown className="h-4 w-4 opacity-60" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem 
+                        onClick={exportToPDF}
+                        disabled={isExporting}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileDown className="h-4 w-4 opacity-60" />
+                        )}
+                        PDF Export
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportToHTML}
+                        disabled={isExporting}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileCode className="h-4 w-4 opacity-60" />
+                        )}
+                        HTML Export
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportToMarkdown}
+                        disabled={isExporting}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileText className="h-4 w-4 opacity-60" />
+                        )}
+                        Markdown Export
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportDigest}
+                        disabled={isExportingDigest}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExportingDigest ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileText className="h-4 w-4 opacity-60" />
+                        )}
+                        Sprint Digest
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportAdvancedDigest}
+                        disabled={isExportingAdvancedDigest}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExportingAdvancedDigest ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4 opacity-60" />
+                        )}
+                        Advanced Digest
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportExecutiveMetrics}
+                        disabled={isExporting}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4 opacity-60" />
+                        )}
+                        Executive Summary
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     variant="outline"
                     size="sm"

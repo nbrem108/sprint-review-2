@@ -61,6 +61,7 @@ interface PresentationModeProps {
   upcomingIssues: Issue[]
   sprintMetrics?: SprintMetrics | null
   corporateSlides?: CorporateSlide[]
+  demoStoryScreenshots?: Record<string, string>
   onClose: () => void
 }
 
@@ -70,6 +71,7 @@ export function PresentationMode({
   upcomingIssues, 
   sprintMetrics, 
   corporateSlides = [],
+  demoStoryScreenshots = {},
   onClose 
 }: PresentationModeProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -79,6 +81,7 @@ export function PresentationMode({
   const [isExporting, setIsExporting] = useState(false)
   const [isExportingMarkdown, setIsExportingMarkdown] = useState(false)
   const [isExportingDigest, setIsExportingDigest] = useState(false)
+  const [isExportingAdvancedDigest, setIsExportingAdvancedDigest] = useState(false)
 
   // Function to get all slides in order
   const getAllSlides = useCallback(() => {
@@ -403,6 +406,69 @@ export function PresentationMode({
     }
   }
 
+  const exportAdvancedDigest = async () => {
+    setIsExportingAdvancedDigest(true)
+    try {
+      // Create presentation object for export
+      const presentation = {
+        id: `presentation-${Date.now()}`,
+        title: allSlides[0]?.title || 'Sprint Review',
+        slides: allSlides,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          sprintName: allSlides[0]?.title || 'Sprint Review',
+          totalSlides: allSlides.length,
+          hasMetrics: !!sprintMetrics,
+          demoStoriesCount: allSlides.filter(s => s.type === 'demo-story').length,
+          customSlidesCount: allSlides.filter(s => s.type === 'corporate').length,
+        },
+      }
+
+      // Call API endpoint for Advanced Digest export
+      const response = await fetch('/api/generate-advanced-digest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          presentation,
+          allIssues,
+          upcomingIssues,
+          sprintMetrics,
+          options: { format: 'advanced-digest' },
+          demoStoryScreenshots
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export Advanced Digest')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const fileName = exportService.generateFileName(presentation, 'pdf')
+      const result: ExportResult = {
+        blob,
+        fileName,
+        fileSize: blob.size,
+        format: 'pdf',
+        metadata: {
+          slideCount: presentation.slides.length,
+          processingTime: 0,
+          quality: 'medium'
+        }
+      }
+      exportService.downloadFile(result)
+
+      console.log("Advanced Digest export completed successfully")
+    } catch (error) {
+      console.error("Export error:", error)
+      // You could add toast notification here
+    } finally {
+      setIsExportingAdvancedDigest(false)
+    }
+  }
+
   const exportPDF = async () => {
     setIsExporting(true)
     try {
@@ -489,6 +555,7 @@ export function PresentationMode({
             isExporting={isExporting}
             isExportingMarkdown={isExportingMarkdown}
             isExportingDigest={isExportingDigest}
+            isExportingAdvancedDigest={isExportingAdvancedDigest}
             onPrevSlide={prevSlide}
             onNextSlide={nextSlide}
             onTogglePlay={() => setIsPlaying(!isPlaying)}
@@ -497,6 +564,7 @@ export function PresentationMode({
             onExportMarkdown={exportMarkdown}
             onExportPDF={exportPDF}
             onExportDigest={exportDigest}
+            onExportAdvancedDigest={exportAdvancedDigest}
             onShowShortcuts={() => setShowShortcuts(true)}
             onGoToSlide={goToSlide}
           />

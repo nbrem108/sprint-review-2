@@ -3,6 +3,12 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   ChevronLeft,
   ChevronRight,
   Maximize,
@@ -12,8 +18,11 @@ import {
   Download,
   FileText,
   FileCode,
+  FileSpreadsheet,
+  FileBarChart,
   Loader2,
   HelpCircle,
+  ChevronDown,
 } from "lucide-react"
 
 interface PresentationControlsProps {
@@ -24,6 +33,7 @@ interface PresentationControlsProps {
   isExporting: boolean
   isExportingMarkdown: boolean
   isExportingDigest: boolean
+  isExportingAdvancedDigest: boolean
   onPrevSlide: () => void
   onNextSlide: () => void
   onTogglePlay: () => void
@@ -32,6 +42,7 @@ interface PresentationControlsProps {
   onExportMarkdown: () => void
   onExportPDF: () => void
   onExportDigest: () => void
+  onExportAdvancedDigest: () => void
   onShowShortcuts: () => void
   onGoToSlide: (index: number) => void
 }
@@ -44,6 +55,7 @@ export function PresentationControls({
   isExporting,
   isExportingMarkdown,
   isExportingDigest,
+  isExportingAdvancedDigest,
   onPrevSlide,
   onNextSlide,
   onTogglePlay,
@@ -52,6 +64,7 @@ export function PresentationControls({
   onExportMarkdown,
   onExportPDF,
   onExportDigest,
+  onExportAdvancedDigest,
   onShowShortcuts,
   onGoToSlide,
 }: PresentationControlsProps) {
@@ -117,45 +130,76 @@ export function PresentationControls({
           </Button>
 
           {/* Export Dropdown */}
-          <div className="flex items-center space-x-1">
-            <Button variant="outline" size="sm" onClick={onExportPDF} className="gap-2 bg-transparent">
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">PDF</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportHTML}
-              disabled={isExporting}
-              className="gap-2 bg-transparent"
-            >
-              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
-              <span className="hidden sm:inline">HTML</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportMarkdown}
-              disabled={isExportingMarkdown}
-              className="gap-2 bg-transparent"
-            >
-              {isExportingMarkdown ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              <span className="hidden sm:inline">MD</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportDigest}
-              disabled={isExportingDigest}
-              className="gap-2 bg-transparent"
-            >
-              {isExportingDigest ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              <span className="hidden sm:inline">Digest</span>
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+                <ChevronDown className="w-4 h-4 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                onClick={onExportPDF}
+                className="gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4 opacity-60" />
+                PDF Export
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={onExportHTML}
+                disabled={isExporting}
+                className="gap-2 cursor-pointer"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                  <FileCode className="w-4 h-4 opacity-60" />
+                )}
+                HTML Export
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={onExportMarkdown}
+                disabled={isExportingMarkdown}
+                className="gap-2 cursor-pointer"
+              >
+                {isExportingMarkdown ? (
+                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                  <FileText className="w-4 h-4 opacity-60" />
+                )}
+                Markdown Export
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={onExportDigest}
+                disabled={isExportingDigest}
+                className="gap-2 cursor-pointer"
+              >
+                {isExportingDigest ? (
+                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                  <FileText className="w-4 h-4 opacity-60" />
+                )}
+                Sprint Digest
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={onExportAdvancedDigest}
+                disabled={isExportingAdvancedDigest}
+                className="gap-2 cursor-pointer"
+              >
+                {isExportingAdvancedDigest ? (
+                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                  <FileBarChart className="w-4 h-4 opacity-60" />
+                )}
+                Advanced Digest
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

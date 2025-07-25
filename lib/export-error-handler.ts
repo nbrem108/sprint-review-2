@@ -272,7 +272,7 @@ export class ExportErrorHandler {
     }
 
     // Check format validity
-    const validFormats = ['pdf', 'html', 'markdown', 'executive', 'digest'];
+    const validFormats = ['pdf', 'html', 'markdown', 'executive', 'digest', 'advanced-digest'];
     if (!validFormats.includes(options.format)) {
       errors.push(`Invalid export format: ${options.format}`);
     }
@@ -335,6 +335,9 @@ export class ExportErrorHandler {
         break;
       case 'digest':
         baseSize *= 0.9;
+        break;
+      case 'advanced-digest':
+        baseSize *= 1.2; // Slightly larger due to AI content and images
         break;
     }
     

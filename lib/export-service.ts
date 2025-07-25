@@ -7,7 +7,7 @@ import { exportCache } from './export-cache';
 
 // Enhanced types for export functionality
 export interface ExportOptions {
-  format: 'pdf' | 'html' | 'markdown' | 'metrics' | 'executive' | 'digest';
+  format: 'pdf' | 'html' | 'markdown' | 'metrics' | 'executive' | 'digest' | 'advanced-digest';
   quality?: 'low' | 'medium' | 'high';
   includeImages?: boolean;
   executiveFormat?: boolean;
@@ -188,9 +188,14 @@ export class ExportService {
       import('./digest-export-renderer').then(({ DigestExportRenderer }) => {
         this.registerRenderer('digest', new DigestExportRenderer());
       });
+      
+      // Register advanced digest renderer (server-side only)
+      import('./advanced-digest-renderer').then(({ AdvancedDigestExportRenderer }) => {
+        this.registerRenderer('advanced-digest', new AdvancedDigestExportRenderer());
+      });
     }
     
-    console.log('📝 Registered default renderers: html, markdown, pdf, executive, digest');
+    console.log('📝 Registered default renderers: html, markdown, pdf, executive, digest, advanced-digest');
   }
 
   /**
