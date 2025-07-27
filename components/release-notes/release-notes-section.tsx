@@ -246,10 +246,22 @@ export function ReleaseNotesSection({ lastReadVersion, onMarkAsRead }: ReleaseNo
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  onClick={() => window.open('/RELEASE_NOTES.md', '_blank')}
+                  onClick={() => window.open('/release-notes', '_blank')}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   View Full Release Notes
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    // Show version information
+                    alert(`Current Version: ${latestRelease.version}\nRelease Date: ${latestRelease.date}\n\nThis is the first official release of Sprint Review Generator!`);
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Version Info
                 </Button>
               </div>
             </div>

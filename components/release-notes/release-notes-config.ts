@@ -21,46 +21,52 @@ export interface ReleaseNotesConfig {
   lastReadVersion?: string;
 }
 
-export const CURRENT_VERSION = '2.0.0';
+export const CURRENT_VERSION = '1.0.0';
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '2.0.0',
+    version: '1.0.0',
     date: 'December 2024',
-    title: 'Command Alkon Logo Integration & Enhanced Slide Layouts',
-    description: 'Major update introducing professional branding and improved slide designs',
+    title: 'First Official Release - Sprint Review Generator',
+    description: '🎉 Welcome to Sprint Review Generator v1.0.0! This is the first official release of our comprehensive tool designed to streamline the creation of professional sprint review presentations.',
     category: 'feature',
     priority: 'high',
     features: [
-      'Command Alkon logo integration across all slides',
-      'Smart logo selection (CMYK/White variants)',
-      'Enhanced slide layouts with professional headers',
-      'Improved responsive design for all devices'
+      'Complete application foundation with React 19 and TypeScript',
+      'Jira Cloud integration for real-time sprint data',
+      'AI-powered content generation with OpenAI integration',
+      'Multi-format export system (Advanced Digest, Executive Summary, Sprint Digest, Markdown)',
+      'Professional presentation mode with full-screen experience',
+      'Corporate branding with Command Alkon logo integration',
+      'Comprehensive tab-based workflow with real-time validation'
     ],
     improvements: [
-      'Better visual hierarchy and content organization',
-      'Faster slide rendering and performance',
-      'Enhanced component reusability and maintainability',
-      'Improved error handling and fallback options'
+      'Advanced export system with audience-specific formats',
+      'Quality assurance and performance monitoring',
+      'Comprehensive error handling and recovery',
+      'Intelligent caching and memory management',
+      'Full keyboard navigation and screen reader support'
     ],
     ui: [
-      'Professional header-footer layouts for title slides',
-      'Enhanced content structure for summary slides',
-      'Improved data visualization for metrics slides',
-      'Non-intrusive logo overlays for demo story slides',
-      'Subtle logo watermarks for corporate slides'
+      'Responsive design optimized for desktop, tablet, and mobile',
+      'Professional slide layouts with consistent branding',
+      'Interactive elements with clickable navigation',
+      'Real-time validation and feedback systems',
+      'Accessible design with proper contrast and navigation'
     ],
     technical: [
-      'Modular component architecture',
-      'Optimized image loading and caching',
-      'Enhanced TypeScript implementation',
-      'Centralized asset path configuration'
+      'Next.js 15 full-stack framework with API routes',
+      'jsPDF for professional document creation',
+      'Advanced image and document processing',
+      'Context-based state management with optimistic updates',
+      'Comprehensive TypeScript implementation'
     ],
     documentation: [
-      'Comprehensive logo implementation guide',
-      'Release notes management plan',
-      'Updated API documentation',
-      'Enhanced setup and configuration guides'
+      'Comprehensive release notes and feature breakdown',
+      'Complete API documentation and integration guides',
+      'Implementation guides for logo integration',
+      'User guides for setup and usage instructions',
+      'Changelog with version history tracking'
     ]
   }
 ];
