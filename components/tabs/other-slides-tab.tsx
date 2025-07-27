@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,17 @@ import { Badge } from "@/components/ui/badge"
 import { Upload, X, ImageIcon, FileImage, Loader2, AlertCircle, CheckCircle, Eye, Edit3 } from "lucide-react"
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
+import { QuarterlyPlanUpload } from "@/components/quarterly-plan-upload"
+
+// Import the AdditionalSlide type from the context
+interface AdditionalSlide {
+  id: string
+  name: string
+  type: string
+  size: number
+  data: string // Base64 encoded file data
+  uploadedAt: string
+}
 
 interface UploadedSlide {
   id: string
@@ -32,6 +43,30 @@ export function OtherSlidesTab() {
   const [editingSlide, setEditingSlide] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [editDescription, setEditDescription] = useState("")
+
+  // Load persisted slides from context
+  useEffect(() => {
+    if (state.additionalSlides.length > 0) {
+      // Remove duplicates by ID to prevent duplicate slides
+      const uniqueSlides = state.additionalSlides.filter((slide, index, self) => 
+        index === self.findIndex(s => s.id === slide.id)
+      )
+      
+      const loadedSlides: UploadedSlide[] = uniqueSlides.map((slide, index) => ({
+        id: slide.id,
+        file: new File([], slide.name, { type: slide.type }), // Create a placeholder file object
+        title: slide.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+        description: "",
+        preview: `data:${slide.type};base64,${slide.data}`, // Reconstruct data URL
+        uploadedAt: slide.uploadedAt,
+        order: index,
+      }))
+      setUploadedSlides(loadedSlides)
+    } else {
+      // Clear local state if no slides in context
+      setUploadedSlides([])
+    }
+  }, [state.additionalSlides])
 
   const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
   const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -77,7 +112,26 @@ export function OtherSlidesTab() {
         }
 
         const preview = await createPreviewUrl(file)
-        const slideId = `slide-${Date.now()}-${i}`
+        const timestamp = Date.now()
+        const randomId = Math.random().toString(36).substr(2, 9)
+        const slideId = `additional-slide-${timestamp}-${randomId}-${i}`
+
+        // Convert file to base64 for storage
+        const fileData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+
+        const additionalSlide: AdditionalSlide = {
+          id: slideId,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: fileData.split(',')[1] || '', // Remove the data URL prefix, keep only base64
+          uploadedAt: new Date().toISOString(),
+        }
 
         const newSlide: UploadedSlide = {
           id: slideId,
@@ -92,10 +146,11 @@ export function OtherSlidesTab() {
         newSlides.push(newSlide)
 
         // Add to context state
-        dispatch({ type: "ADD_SLIDE", payload: file })
+        dispatch({ type: "ADD_SLIDE", payload: additionalSlide })
       }
 
-      setUploadedSlides((prev) => [...prev, ...newSlides])
+      // Don't update local state here - let the useEffect handle it from context
+      // setUploadedSlides((prev) => [...prev, ...newSlides])
 
       toast({
         title: "Upload Successful",
@@ -137,7 +192,7 @@ export function OtherSlidesTab() {
     const slideIndex = uploadedSlides.findIndex((slide) => slide.id === slideId)
     if (slideIndex !== -1) {
       setUploadedSlides((prev) => prev.filter((slide) => slide.id !== slideId))
-      dispatch({ type: "REMOVE_SLIDE", payload: slideIndex })
+      dispatch({ type: "REMOVE_SLIDE", payload: slideId })
 
       toast({
         title: "Slide Removed",
@@ -211,6 +266,9 @@ export function OtherSlidesTab() {
           Upload custom images to include as additional slides in your presentation
         </p>
       </div>
+
+      {/* Quarterly Plan Upload */}
+      <QuarterlyPlanUpload />
 
       {/* Upload Area */}
       <Card>

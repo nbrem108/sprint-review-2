@@ -81,22 +81,22 @@ export function DemoStoriesTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="flex flex-col h-full">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Demo Stories</h2>
         <p className="text-muted-foreground">
           Select stories to highlight in your presentation ({state.demoStories.length} selected)
         </p>
       </div>
 
-      <Card>
+      <Card className="flex-1 flex flex-col">
         <CardHeader>
           <CardTitle>Story Selection</CardTitle>
           <CardDescription>
             Choose which stories from {state.selectedSprint.name} to showcase in your demo
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex-1 flex flex-col space-y-4">
           {/* Enhanced Filter Controls */}
           <div className="space-y-4">
             {/* Search and Action Buttons Row */}
@@ -184,8 +184,8 @@ export function DemoStoriesTab() {
           </div>
 
           {/* Scrollable Stories Container */}
-          <div className="border rounded-lg">
-            <div className="max-h-96 overflow-y-auto">
+          <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto">
               <div className="space-y-2 p-4">
                 {filteredIssues.map((issue) => {
                   const isSelected = state.demoStories.includes(issue.id)
@@ -241,7 +241,7 @@ export function DemoStoriesTab() {
       </Card>
 
       {state.demoStories.length > 0 && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle>Selected Demo Stories</CardTitle>
             <CardDescription>{state.demoStories.length} stories selected for presentation</CardDescription>

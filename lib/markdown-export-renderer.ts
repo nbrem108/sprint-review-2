@@ -265,6 +265,9 @@ ${this.getTeamPerformanceSummary(allIssues)}
       case 'qa':
         markdown += this.renderQASlideMarkdown(slide);
         break;
+      case 'quarterly-plan':
+        markdown += this.renderCorporateSlideMarkdown(slide);
+        break;
       default:
         markdown += this.renderDefaultSlideMarkdown(slide);
     }

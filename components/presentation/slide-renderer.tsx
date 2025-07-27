@@ -8,6 +8,7 @@ import Image from "next/image"
 import { marked } from 'marked';
 import { useSprintContext } from "@/components/sprint-context"
 import { isIssueCompleted } from "@/lib/utils"
+import { SprintComparisonTable } from "@/components/sprint-comparison-table"
 
 interface PresentationSlide {
   id: string
@@ -17,7 +18,7 @@ interface PresentationSlide {
     businessValue?: string
     userImpact?: string
   }
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "review-legend" | "qa"
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "review-legend" | "qa" | "executive" | "quarterly-plan"
   order: number
   corporateSlideUrl?: string // Add this for corporate slides
   storyId?: string // Add the specific story ID for demo story slides
@@ -186,6 +187,17 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
           </SlideBackground>
         )
 
+      case "quarterly-plan":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <CorporateSlide
+              slide={slide}
+              containerClass={containerClass}
+              isFullscreen={isFullscreen}
+            />
+          </SlideBackground>
+        )
+
       case "review-legend":
         return (
           <SlideBackground isFullscreen={isFullscreen}>
@@ -208,6 +220,13 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
         return (
           <SlideBackground isFullscreen={isFullscreen}>
             <QASlide slide={slide} containerClass={containerClass} titleClass={titleClass} sprintMetrics={sprintMetrics} allIssues={allIssues} isFullscreen={isFullscreen} />
+          </SlideBackground>
+        )
+
+      case "executive":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <ExecutiveSlide slide={slide} containerClass={containerClass} titleClass={titleClass} sprintMetrics={sprintMetrics} allIssues={allIssues} isFullscreen={isFullscreen} />
           </SlideBackground>
         )
 
@@ -239,6 +258,8 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
 }
 
 function TitleSlide({ slide, containerClass, titleClass }: any) {
+  const { state } = useSprintContext()
+  
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
@@ -420,21 +441,30 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
   const completionRate = allIssues.length > 0 ? Math.round((completedIssues.length / allIssues.length) * 100) : 0
   const qualityScore = calculateQualityScore(sprintMetrics.qualityChecklist)
   
-  // Executive-friendly metrics calculations
+  // Real metrics calculations
   const velocity = sprintMetrics.completedTotalPoints
   const velocityTarget = sprintMetrics.estimatedPoints
   const velocityAchievement = velocityTarget > 0 ? Math.round((velocity / velocityTarget) * 100) : 0
-  const efficiencyScore = Math.round((velocityAchievement + qualityScore) / 2)
   
-  // Executive summary status
-  const getExecutiveStatus = () => {
-    if (efficiencyScore >= 85) return { status: "EXCEEDING TARGETS", color: "text-green-600", bg: "bg-green-50", border: "border-green-200" }
-    if (efficiencyScore >= 70) return { status: "MEETING TARGETS", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" }
-    if (efficiencyScore >= 50) return { status: "NEEDS ATTENTION", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" }
-    return { status: "CRITICAL", color: "text-red-600", bg: "bg-red-50", border: "border-red-200" }
+  // Calculate real completion rate based on planned vs completed items
+  const plannedItems = sprintMetrics.plannedItems
+  const completedItems = completedIssues.length
+  const realCompletionRate = plannedItems > 0 ? Math.round((completedItems / plannedItems) * 100) : 0
+  
+  // Quality standards compliance (percentage of checklist items met)
+  const qualityChecklistItems = Object.values(sprintMetrics.qualityChecklist)
+  const metQualityStandards = qualityChecklistItems.filter(item => item === "yes").length
+  const qualityStandardsCompliance = qualityChecklistItems.length > 0 ? Math.round((metQualityStandards / qualityChecklistItems.length) * 100) : 0
+  
+  // Determine primary status based on velocity achievement (most critical metric)
+  const getPrimaryStatus = () => {
+    if (velocityAchievement >= 100) return { status: "VELOCITY: EXCEEDING TARGET", color: "text-green-600", bg: "bg-green-50", border: "border-green-200" }
+    if (velocityAchievement >= 80) return { status: "VELOCITY: ON TARGET", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" }
+    if (velocityAchievement >= 60) return { status: "VELOCITY: NEEDS ATTENTION", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-200" }
+    return { status: "VELOCITY: BELOW TARGET", color: "text-red-600", bg: "bg-red-50", border: "border-red-200" }
   }
   
-  const executiveStatus = getExecutiveStatus()
+  const primaryStatus = getPrimaryStatus()
 
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
@@ -461,13 +491,13 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
             <h2 className={`${titleClass} text-gray-900 font-extrabold tracking-tight`}>Executive Performance Dashboard</h2>
             <div className="h-1 sm:h-1.5 lg:h-2 w-20 sm:w-24 lg:w-32 xl:w-40 bg-gradient-to-r from-ca-blue-600 to-ca-indigo-600 rounded-full mx-auto"></div>
             
-            {/* Executive Status Banner */}
-            <div className={`mt-4 p-3 rounded-lg ${executiveStatus.bg} ${executiveStatus.border} border`}>
-              <div className={`text-lg sm:text-xl font-bold ${executiveStatus.color}`}>
-                {executiveStatus.status}
+            {/* Primary Status Banner */}
+            <div className={`mt-4 p-3 rounded-lg ${primaryStatus.bg} ${primaryStatus.border} border`}>
+              <div className={`text-lg sm:text-xl font-bold ${primaryStatus.color}`}>
+                {primaryStatus.status}
               </div>
               <div className="text-sm text-gray-600">
-                Overall Efficiency Score: {efficiencyScore}%
+                {velocityAchievement}% of {velocityTarget} points completed
               </div>
             </div>
           </div>
@@ -481,19 +511,19 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
                 <div className="text-xs text-ca-blue-600 mt-1">{velocityAchievement}% of Target</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">{completionRate}%</div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">{realCompletionRate}%</div>
                 <div className="text-sm sm:text-base text-green-700 font-medium">Completion Rate</div>
-                <div className="text-xs text-green-600 mt-1">{completedIssues.length}/{allIssues.length} Items</div>
+                <div className="text-xs text-green-600 mt-1">{completedItems}/{plannedItems} Items</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-orange-50 to-amber-50 rounded-lg border border-ca-orange-200">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-orange-600 mb-2">{sprintMetrics.testCoverage}%</div>
-                <div className="text-sm sm:text-base text-ca-orange-700 font-medium">Quality Assurance</div>
-                <div className="text-xs text-ca-orange-600 mt-1">Test Coverage</div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-orange-600 mb-2">{qualityStandardsCompliance}%</div>
+                <div className="text-sm sm:text-base text-ca-orange-700 font-medium">Quality Standards</div>
+                <div className="text-xs text-ca-orange-600 mt-1">{metQualityStandards}/{qualityChecklistItems.length} Met</div>
               </div>
               <div className="text-center p-4 sm:p-6 bg-gradient-to-br from-ca-indigo-50 to-purple-50 rounded-lg border border-ca-indigo-200">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-indigo-600 mb-2">{qualityScore}%</div>
-                <div className="text-sm sm:text-base text-ca-indigo-700 font-medium">Quality Score</div>
-                <div className="text-xs text-ca-indigo-600 mt-1">Standards Compliance</div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ca-indigo-600 mb-2">{sprintMetrics.testCoverage}%</div>
+                <div className="text-sm sm:text-base text-ca-indigo-700 font-medium">Test Coverage</div>
+                <div className="text-xs text-ca-indigo-600 mt-1">Quality Assurance</div>
               </div>
             </div>
 
@@ -511,15 +541,15 @@ function MetricsSlide({ slide, containerClass, titleClass, sprintMetrics, allIss
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Quality Standards:</span>
-                      <span className={`font-semibold ${qualityScore >= 80 ? 'text-green-600' : qualityScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {qualityScore}%
+                      <span className="text-gray-600">Completion Rate:</span>
+                      <span className={`font-semibold ${realCompletionRate >= 80 ? 'text-green-600' : realCompletionRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {realCompletionRate}%
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Team Efficiency:</span>
-                      <span className={`font-semibold ${efficiencyScore >= 80 ? 'text-green-600' : efficiencyScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {efficiencyScore}%
+                      <span className="text-gray-600">Quality Standards:</span>
+                      <span className={`font-semibold ${qualityStandardsCompliance >= 80 ? 'text-green-600' : qualityStandardsCompliance >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {qualityStandardsCompliance}%
                       </span>
                     </div>
                   </div>
@@ -1097,6 +1127,129 @@ function QASlide({ slide, containerClass, titleClass, sprintMetrics, allIssues, 
       <div className="absolute bottom-4 right-4 z-20">
         <img 
           src="/company-logos/CommandAlkon_Logo_Primary_White.svg" 
+          alt="Command Alkon" 
+          className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-80 hover:opacity-100 transition-opacity drop-shadow-lg`}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ExecutiveSlide({ slide, containerClass, titleClass, sprintMetrics, allIssues, isFullscreen }: any) {
+  const { state } = useSprintContext()
+  const completedIssues = allIssues.filter((issue: Issue) => isIssueCompleted(issue.status || ""))
+  const qualityScore = sprintMetrics ? calculateQualityScore(sprintMetrics.qualityChecklist) : 0
+  
+  // Real metrics calculations
+  const velocity = sprintMetrics?.completedTotalPoints || 0
+  const velocityTarget = sprintMetrics?.estimatedPoints || 0
+  const velocityAchievement = velocityTarget > 0 ? Math.round((velocity / velocityTarget) * 100) : 0
+  
+  // Calculate real completion rate based on planned vs completed items
+  const plannedItems = sprintMetrics?.plannedItems || 0
+  const completedItems = completedIssues.length
+  const realCompletionRate = plannedItems > 0 ? Math.round((completedItems / plannedItems) * 100) : 0
+  
+  // Quality standards compliance (percentage of checklist items met)
+  const qualityChecklistItems = sprintMetrics ? Object.values(sprintMetrics.qualityChecklist) : []
+  const metQualityStandards = qualityChecklistItems.filter(item => item === "yes").length
+  const qualityStandardsCompliance = qualityChecklistItems.length > 0 ? Math.round((metQualityStandards / qualityChecklistItems.length) * 100) : 0
+  
+  return (
+    <div className={`${containerClass} relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100`}>
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 sm:p-6">
+        <h1 className={`${titleClass} text-white mb-2`}>Executive Summary</h1>
+        <p className="text-blue-100 text-sm sm:text-base">Sprint Performance Overview</p>
+      </div>
+      
+      {/* Main Content */}
+      <div className="pt-20 sm:pt-24 lg:pt-28 px-4 sm:px-6 lg:px-8 pb-4 h-full overflow-y-auto">
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{velocityAchievement}%</div>
+            <div className="text-xs sm:text-sm text-gray-600 font-medium">Velocity</div>
+            <div className="text-xs text-gray-500">{velocity}/{velocityTarget} pts</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">{qualityScore}%</div>
+            <div className="text-xs sm:text-sm text-gray-600 font-medium">Quality</div>
+            <div className="text-xs text-gray-500">Score</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600">{realCompletionRate}%</div>
+            <div className="text-xs sm:text-sm text-gray-600 font-medium">Completion</div>
+            <div className="text-xs text-gray-500">{completedItems}/{plannedItems}</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="text-2xl sm:text-3xl font-bold text-orange-600">{qualityStandardsCompliance}%</div>
+            <div className="text-xs sm:text-sm text-gray-600 font-medium">Quality Standards</div>
+            <div className="text-xs text-gray-500">{metQualityStandards}/{qualityChecklistItems.length} Met</div>
+          </div>
+        </div>
+        
+        {/* Sprint Metrics Comparison Table */}
+        {state.sprintComparison ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">Sprint Metrics Comparison</h3>
+            </div>
+            <div className="p-4">
+              <SprintComparisonTable comparison={state.sprintComparison} className="border-0 shadow-none" />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">Sprint Metrics Comparison</h3>
+            </div>
+            <div className="p-4 text-center text-gray-500">
+              No historical sprint data available for comparison
+            </div>
+          </div>
+        )}
+        
+        {/* Business Impact Summary */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">Business Impact</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">High-Value Items:</span>
+                <span className="font-semibold">{completedIssues.filter((i: Issue) => (i.storyPoints || 0) >= 8).length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Bug Fixes:</span>
+                <span className="font-semibold">{completedIssues.filter((i: Issue) => i.issueType === 'Bug').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Technical Debt:</span>
+                <span className="font-semibold">{completedIssues.filter((i: Issue) => i.issueType === 'Technical task').length}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">Key Insights</h4>
+            <div className="space-y-2 text-sm">
+              <div className={`p-2 rounded ${velocityAchievement >= 80 ? 'bg-green-100 text-green-800' : velocityAchievement >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                {velocityAchievement >= 80 ? '✅' : velocityAchievement >= 60 ? '⚠️' : '❌'} Velocity: {velocityAchievement >= 80 ? 'On Track' : velocityAchievement >= 60 ? 'Needs Attention' : 'Critical'}
+              </div>
+              <div className={`p-2 rounded ${qualityScore >= 80 ? 'bg-green-100 text-green-800' : qualityScore >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                {qualityScore >= 80 ? '✅' : qualityScore >= 60 ? '⚠️' : '❌'} Quality: {qualityScore >= 80 ? 'Excellent' : qualityScore >= 60 ? 'Good' : 'Needs Improvement'}
+              </div>
+                                          <div className={`p-2 rounded ${realCompletionRate >= 80 ? 'bg-green-100 text-green-800' : realCompletionRate >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                              {realCompletionRate >= 80 ? '✅' : realCompletionRate >= 60 ? '⚠️' : '❌'} Completion: {realCompletionRate >= 80 ? 'High' : realCompletionRate >= 60 ? 'Moderate' : 'Low'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Company Logo overlay - positioned in bottom right corner */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <img 
+          src="/company-logos/CommandAlkon_Logo_Primary_CMYK.svg" 
           alt="Command Alkon" 
           className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-80 hover:opacity-100 transition-opacity drop-shadow-lg`}
         />

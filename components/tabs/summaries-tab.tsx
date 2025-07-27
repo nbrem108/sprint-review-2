@@ -395,9 +395,9 @@ export function SummariesTab() {
 
   // Check if all summaries are successfully generated
   const allSummariesGenerated = 
-    generationStatus.currentSprint === "complete" &&
-    generationStatus.upcomingSprint === "complete" &&
-    generationStatus.demoStories === "complete"
+    (state.summaries.currentSprint && state.summaries.currentSprint.trim() !== "") &&
+    (state.summaries.upcomingSprint && state.summaries.upcomingSprint.trim() !== "") &&
+    (state.summaries.demoStories && Object.keys(state.summaries.demoStories).length > 0)
 
   if (!canGenerate) {
     return (
@@ -443,16 +443,6 @@ export function SummariesTab() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {allSummariesGenerated && (
-            <Button
-              onClick={navigateToPresentation}
-              variant="default"
-              className="gap-2 bg-green-600 hover:bg-green-700"
-            >
-              <Presentation className="h-4 w-4" />
-              Navigate to Presentation
-            </Button>
-          )}
           <Button
             onClick={generateAllSummaries}
             disabled={Object.values(generationStatus).some((status) => status === "generating")}
@@ -465,6 +455,16 @@ export function SummariesTab() {
             )}
             Generate All Summaries
           </Button>
+          {allSummariesGenerated && (
+            <Button
+              onClick={navigateToPresentation}
+              variant="default"
+              className="gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Presentation className="h-4 w-4" />
+              Navigate to Presentation
+            </Button>
+          )}
         </div>
       </div>
 

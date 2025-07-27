@@ -529,6 +529,8 @@ export class HTMLExportRenderer implements ExportRenderer {
         return this.renderCorporateSlideHTML(slide);
       case 'qa':
         return this.renderQASlideHTML(slide);
+      case 'quarterly-plan':
+        return this.renderCorporateSlideHTML(slide);
       default:
         return this.renderDefaultSlideHTML(slide);
     }

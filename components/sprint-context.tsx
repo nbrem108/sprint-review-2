@@ -136,6 +136,24 @@ interface CorporateSlide {
   uploadedAt: string
 }
 
+interface AdditionalSlide {
+  id: string
+  name: string
+  type: string
+  size: number
+  data: string // Base64 encoded file data
+  uploadedAt: string
+}
+
+interface QuarterlyPlanSlide {
+  id: string
+  name: string
+  type: string
+  size: number
+  data: string // Base64 encoded file data
+  uploadedAt: string
+}
+
 interface SprintState {
   selectedProject: Project | null
   selectedBoard: Board | null
@@ -155,7 +173,8 @@ interface SprintState {
     upcomingSprint?: string
     demoStories?: Record<string, string>
   }
-  additionalSlides: File[]
+  additionalSlides: AdditionalSlide[]
+  quarterlyPlanSlide: QuarterlyPlanSlide | null
   corporateSlides: CorporateSlide[]
   generatedPresentation: GeneratedPresentation | null
   loading: {
@@ -190,7 +209,7 @@ interface PresentationSlide {
   id: string
   title: string
   content: string
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa"
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa" | "executive" | "quarterly-plan"
   order: number
   corporateSlideUrl?: string
   storyId?: string
@@ -212,8 +231,9 @@ type SprintAction =
   | { type: "SET_SPRINT_TRENDS"; payload: SprintTrends | null }
   | { type: "SAVE_HISTORICAL_SPRINT"; payload: HistoricalSprintData }
   | { type: "SET_SUMMARIES"; payload: SprintState["summaries"] }
-  | { type: "ADD_SLIDE"; payload: File }
-  | { type: "REMOVE_SLIDE"; payload: number }
+  | { type: "ADD_SLIDE"; payload: AdditionalSlide }
+  | { type: "REMOVE_SLIDE"; payload: string }
+  | { type: "SET_QUARTERLY_PLAN_SLIDE"; payload: QuarterlyPlanSlide | null }
   | { type: "SET_CORPORATE_SLIDES"; payload: CorporateSlide[] }
   | { type: "SET_GENERATED_PRESENTATION"; payload: GeneratedPresentation | null }
   | { type: "SET_LOADING"; payload: { key: keyof SprintState["loading"]; value: boolean } }
@@ -274,6 +294,8 @@ const serializeStateForStorage = (state: SprintState) => ({
   sprintComparison: state.sprintComparison,
   sprintTrends: state.sprintTrends,
   summaries: state.summaries,
+  additionalSlides: state.additionalSlides,
+  quarterlyPlanSlide: state.quarterlyPlanSlide,
   corporateSlides: state.corporateSlides,
   generatedPresentation: state.generatedPresentation,
   currentTab: state.currentTab,
@@ -320,6 +342,7 @@ const initialState: SprintState = {
   sprintTrends: null,
   summaries: {},
   additionalSlides: [],
+  quarterlyPlanSlide: null,
   corporateSlides: [
     {
       id: "default-intro",
@@ -485,8 +508,11 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
     case "REMOVE_SLIDE":
       newState = {
         ...state,
-        additionalSlides: state.additionalSlides.filter((_, index) => index !== action.payload),
+        additionalSlides: state.additionalSlides.filter(slide => slide.id !== action.payload),
       }
+      break
+    case "SET_QUARTERLY_PLAN_SLIDE":
+      newState = { ...state, quarterlyPlanSlide: action.payload }
       break
     case "SET_CORPORATE_SLIDES":
       newState = { ...state, corporateSlides: deduplicateCorporateSlides(action.payload) }
@@ -507,6 +533,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         sprintComparison: null,
         summaries: {},
         additionalSlides: [],
+        quarterlyPlanSlide: null,
       }
       break
     case "SET_LOADING":

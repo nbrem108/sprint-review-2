@@ -4,16 +4,17 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Save, Calculator, CheckCircle, AlertCircle } from "lucide-react"
+import { Save, Calculator, CheckCircle, AlertCircle, Info } from "lucide-react"
 import { SprintComparisonTable } from "@/components/sprint-comparison-table"
 import { enhanceSprintMetrics, createSprintComparisonFromJira } from "@/lib/sprint-comparison-utils"
 import { useSprintContext, SprintMetrics } from "@/components/sprint-context"
 import { fetchJiraSprints, fetchJiraSprintIssues } from "@/lib/jira-api"
 import { isIssueCompleted } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type QualityScore = "yes" | "no" | "partial" | "na"
 
@@ -79,29 +80,79 @@ const initialFormData: MetricsFormData = {
   retrospectiveNotes: "",
   
   // Quality checklist
-  sprintCommitment: "na",
-  velocity: "na",
-  testCoverage: "na",
-  testAutomation: "na",
-  uiUxStandards: "na",
-  internationalFirst: "na",
-  mobileResponsive: "na",
-  featurePermissions: "na",
-  releaseNotes: "na",
+  sprintCommitment: "no",
+  velocity: "no",
+  testCoverage: "no",
+  testAutomation: "no",
+  uiUxStandards: "no",
+  internationalFirst: "no",
+  mobileResponsive: "no",
+  featurePermissions: "no",
+  releaseNotes: "no",
   howToVideos: "na",
 }
 
 const qualityItems = [
-  { key: "sprintCommitment", label: "Sprint Commitment", description: "Met sprint commitment goals" },
-  { key: "velocity", label: "Velocity", description: "Achieved velocity targets" },
-  { key: "testCoverage", label: "Test Code Coverage", description: "Met coverage requirements" },
-  { key: "testAutomation", label: "Test Automation", description: "Followed automation standards" },
-  { key: "uiUxStandards", label: "UI/UX Standards", description: "Maintained design standards" },
-  { key: "internationalFirst", label: "International First", description: "Met i18n requirements" },
-  { key: "mobileResponsive", label: "Mobile Responsive", description: "Achieved mobile responsiveness" },
-  { key: "featurePermissions", label: "Feature Permissions", description: "Implemented permission requirements" },
-  { key: "releaseNotes", label: "Release Notes", description: "Created release documentation" },
-  { key: "howToVideos", label: "How To Videos", description: "Created instructional videos" },
+  { 
+    key: "sprintCommitment", 
+    label: "Sprint Commitment", 
+    description: "Met sprint commitment goals",
+    tooltip: "Did the team meet the story point commitment they made at the start of the sprint?"
+  },
+  { 
+    key: "velocity", 
+    label: "Velocity", 
+    description: "Achieved velocity targets",
+    tooltip: "Did the team achieve their planned velocity for this sprint?"
+  },
+  { 
+    key: "testCoverage", 
+    label: "Test Code Coverage", 
+    description: "Met coverage requirements",
+    tooltip: "Did the team meet the required test coverage percentage for new code?"
+  },
+  { 
+    key: "testAutomation", 
+    label: "Test Automation", 
+    description: "Followed automation standards",
+    tooltip: "Were automated tests written and maintained according to team standards?"
+  },
+  { 
+    key: "uiUxStandards", 
+    label: "UI/UX Standards", 
+    description: "Maintained design standards",
+    tooltip: "Did the team follow established UI/UX design patterns and standards?"
+  },
+  { 
+    key: "internationalFirst", 
+    label: "International First", 
+    description: "Met i18n requirements",
+    tooltip: "Were internationalization (i18n) requirements properly implemented?"
+  },
+  { 
+    key: "mobileResponsive", 
+    label: "Mobile Responsive", 
+    description: "Achieved mobile responsiveness",
+    tooltip: "Were all features properly tested and optimized for mobile devices?"
+  },
+  { 
+    key: "featurePermissions", 
+    label: "Feature Permissions", 
+    description: "Implemented permission requirements",
+    tooltip: "Were proper access controls and permissions implemented for new features?"
+  },
+  { 
+    key: "releaseNotes", 
+    label: "Release Notes", 
+    description: "Created release documentation",
+    tooltip: "Were release notes updated with all new features and changes?"
+  },
+  { 
+    key: "howToVideos", 
+    label: "How To Videos", 
+    description: "Created instructional videos",
+    tooltip: "Were instructional videos created for new features to help users?"
+  },
 ] as const
 
 export function MetricsTab() {
@@ -365,7 +416,19 @@ export function MetricsTab() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="sprintNumber">Sprint Number</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintNumber">Sprint Number</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The active sprint you have selected</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintNumber"
                 value={state.selectedSprint?.name || ""}
@@ -374,7 +437,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sprintBacklogPlanned">Sprint Backlog (Planned)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintBacklogPlanned">Sprint Backlog (Planned)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The number of sprints you have completely planned with story points, etc.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintBacklogPlanned"
                 type="number"
@@ -384,7 +459,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sprintBacklogEstimated">Sprint Backlog (Estimated)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintBacklogEstimated">Sprint Backlog (Estimated)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The number of sprints where you have planned with estimates</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintBacklogEstimated"
                 type="number"
@@ -394,7 +481,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sprintStoryPointCommitment">Sprint Story Point Commitment</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintStoryPointCommitment">Sprint Story Point Commitment</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The amount of story points your team committed to when the sprint started</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintStoryPointCommitment"
                 type="number"
@@ -404,7 +503,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="carryForwardPoints">Carry Forward Points</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="carryForwardPoints">Carry Forward Points</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The story points your team carried over into the next sprint</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="carryForwardPoints"
                 type="number"
@@ -414,7 +525,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="committedBufferPoints">Committed Buffer Points</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="committedBufferPoints">Committed Buffer Points</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The amount of story points your team commits to as buffer for production related issues</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="committedBufferPoints"
                 type="number"
@@ -424,7 +547,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="completedBufferPoints">Completed Buffer Points</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="completedBufferPoints">Completed Buffer Points</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The completed total story points for buffer tasks (as stated above)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="completedBufferPoints"
                 type="number"
@@ -434,7 +569,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="testCoverage">Test Code Coverage (%)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="testCoverage">Test Code Coverage (%)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ran by the development team, provides the test code coverage percentage for the CTO</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="testCoverage"
                 type="number"
@@ -447,7 +594,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="completedTotalPoints">Completed Total Points</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="completedTotalPoints">Completed Total Points</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The final sum of story points when the sprint concluded</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="completedTotalPoints"
                 type="number"
@@ -457,7 +616,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="completedAdjustedPoints">Completed Adjusted Points</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="completedAdjustedPoints">Completed Adjusted Points</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>A sum of the buffer + completed story points</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="completedAdjustedPoints"
                 type="number"
@@ -479,7 +650,19 @@ export function MetricsTab() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="sprintStartDate">Sprint Start Date</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintStartDate">Sprint Start Date</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The official start date of the sprint</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintStartDate"
                 type="date"
@@ -488,7 +671,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sprintEndDate">Sprint End Date</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintEndDate">Sprint End Date</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The official end date of the sprint</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintEndDate"
                 type="date"
@@ -497,7 +692,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="teamSize">Team Size</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="teamSize">Team Size</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The total number of team members working on this sprint</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="teamSize"
                 type="number"
@@ -508,7 +715,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="averageCycleTime">Average Cycle Time (days)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="averageCycleTime">Average Cycle Time (days)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The average time from when work starts to when it's completed</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="averageCycleTime"
                 type="number"
@@ -522,7 +741,19 @@ export function MetricsTab() {
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="sprintGoal">Sprint Goal</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sprintGoal">Sprint Goal</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The main objective or target that the team aimed to achieve in this sprint</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="sprintGoal"
                 value={formData.sprintGoal}
@@ -531,7 +762,19 @@ export function MetricsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="retrospectiveNotes">Retrospective Notes</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="retrospectiveNotes">Retrospective Notes</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Key learnings, improvements, and action items from the sprint retrospective meeting</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <textarea
                 id="retrospectiveNotes"
                 value={formData.retrospectiveNotes}
@@ -587,52 +830,69 @@ export function MetricsTab() {
           <CardTitle>Quality & Standards Checklist</CardTitle>
           <CardDescription>Evaluate sprint quality across key standards and practices</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {qualityItems.map((item, index) => (
-            <div key={item.key}>
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-base font-medium">{item.label}</Label>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </div>
-                <RadioGroup
-                  value={formData[item.key as keyof MetricsFormData] as QualityScore}
-                  onValueChange={(value: QualityScore) =>
-                    handleQualityChange(item.key as keyof MetricsFormData, value)
-                  }
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="yes" id={`${item.key}-yes`} />
-                    <Label htmlFor={`${item.key}-yes`} className="text-green-700">
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {qualityItems.map((item) => (
+              <Card key={item.key} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">{item.label}</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{item.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                  <ToggleGroup
+                    variant="outline"
+                    type="single"
+                    value={formData[item.key as keyof MetricsFormData] as QualityScore}
+                    onValueChange={(value: QualityScore) =>
+                      value && handleQualityChange(item.key as keyof MetricsFormData, value)
+                    }
+                    className="flex gap-1 justify-start"
+                  >
+                    <ToggleGroupItem 
+                      value="yes" 
+                      size="sm"
+                      className="text-xs data-[state=on]:bg-green-100 data-[state=on]:text-green-700 data-[state=on]:border-green-300"
+                    >
                       Yes
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="partial" id={`${item.key}-partial`} />
-                    <Label htmlFor={`${item.key}-partial`} className="text-yellow-700">
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="partial" 
+                      size="sm"
+                      className="text-xs data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-700 data-[state=on]:border-yellow-300"
+                    >
                       Partial
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="no" id={`${item.key}-no`} />
-                    <Label htmlFor={`${item.key}-no`} className="text-red-700">
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="no" 
+                      size="sm"
+                      className="text-xs data-[state=on]:bg-red-100 data-[state=on]:text-red-700 data-[state=on]:border-red-300"
+                    >
                       No
-                    </Label>
-                  </div>
-                  {item.key === "howToVideos" && (
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="na" id={`${item.key}-na`} />
-                      <Label htmlFor={`${item.key}-na`} className="text-gray-500">
+                    </ToggleGroupItem>
+                    {item.key === "howToVideos" && (
+                      <ToggleGroupItem 
+                        value="na" 
+                        size="sm"
+                        className="text-xs data-[state=on]:bg-gray-100 data-[state=on]:text-gray-700 data-[state=on]:border-gray-300"
+                      >
                         N/A
-                      </Label>
-                    </div>
-                  )}
-                </RadioGroup>
-              </div>
-              {index < qualityItems.length - 1 && <Separator className="mt-6" />}
-            </div>
-          ))}
+                      </ToggleGroupItem>
+                    )}
+                  </ToggleGroup>
+                </div>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
