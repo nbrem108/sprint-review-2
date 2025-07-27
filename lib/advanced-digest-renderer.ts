@@ -150,7 +150,23 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     sprintMetrics: SprintMetrics | null | undefined,
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void,
-    demoStoryScreenshots?: Record<string, string>
+    demoStoryScreenshots?: Record<string, string>,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<ExportResult> {
     const startTime = Date.now();
 
@@ -174,7 +190,8 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
         sprintMetrics,
         options,
         onProgress,
-        demoStoryScreenshots
+        demoStoryScreenshots,
+        additionalData
       );
 
       const pdfBlob = doc.output('blob');
@@ -253,7 +270,23 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     sprintMetrics: SprintMetrics | null | undefined,
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void,
-    demoStoryScreenshots?: Record<string, string>
+    demoStoryScreenshots?: Record<string, string>,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<void> {
     let yPosition = 40;
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -281,51 +314,44 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
       current: 10,
       total: 100,
       percentage: 10,
-      message: 'Generating executive summary...' 
+      message: 'Adding current sprint summary...' 
     });
-
-    // Generate AI-powered content
-    yPosition = await this.addExecutiveSummary(doc, presentation, allIssues, sprintMetrics, yPosition, margin, contentWidth);
+    
+    // Add current sprint summary if available
+    if (additionalData?.summaries?.currentSprint) {
+      yPosition = await this.addSprintSummary(doc, additionalData.summaries.currentSprint, yPosition, margin, contentWidth);
+    }
     
     this.updateProgress(onProgress, { 
       stage: 'processing', 
-      current: 30,
+      current: 40,
       total: 100,
-      percentage: 30,
-      message: 'Adding demo stories...' 
+      percentage: 40,
+      message: 'Adding detailed demos...' 
     });
     
-    yPosition = await this.addDemoStoriesWithImages(doc, presentation, allIssues, yPosition, margin, contentWidth, demoStoryScreenshots);
+    yPosition = await this.addDetailedDemos(doc, presentation, allIssues, yPosition, margin, contentWidth, demoStoryScreenshots, additionalData);
     
     this.updateProgress(onProgress, { 
       stage: 'processing', 
-      current: 50,
+      current: 80,
       total: 100,
-      percentage: 50,
-      message: 'Generating sprint analysis...' 
+      percentage: 80,
+      message: 'Adding upcoming sprint...' 
     });
     
-    yPosition = await this.addSprintAnalysis(doc, sprintMetrics, allIssues, yPosition, margin, contentWidth);
-    
-    this.updateProgress(onProgress, { 
-      stage: 'processing', 
-      current: 70,
-      total: 100,
-      percentage: 70,
-      message: 'Adding strategic insights...' 
-    });
-    
-    yPosition = await this.addStrategicInsights(doc, presentation, upcomingIssues, yPosition, margin, contentWidth);
+    // Add upcoming sprint summary if available
+    if (additionalData?.summaries?.upcomingSprint) {
+      yPosition = await this.addUpcomingSprintSummary(doc, additionalData.summaries.upcomingSprint, yPosition, margin, contentWidth);
+    }
     
     this.updateProgress(onProgress, { 
       stage: 'processing', 
       current: 90,
       total: 100,
       percentage: 90,
-      message: 'Generating action items...' 
+      message: 'Finalizing document...' 
     });
-    
-    yPosition = this.addActionItems(doc, presentation, allIssues, yPosition, margin, contentWidth);
 
     this.updateProgress(onProgress, { 
       stage: 'finalizing', 
@@ -338,62 +364,32 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     this.addFooter(doc, presentation);
   }
 
-  private async addExecutiveSummary(
-    doc: jsPDF,
-    presentation: GeneratedPresentation,
-    allIssues: Issue[],
-    sprintMetrics: SprintMetrics | null | undefined,
-    yPosition: number,
-    margin: number,
-    contentWidth: number
-  ): Promise<number> {
-    // Generate AI content
-    const teamPerformance = this.calculateTeamPerformance(allIssues);
-    const keyMetrics = this.formatKeyMetrics(sprintMetrics);
-    
-    const aiContent = await this.generateAIContent('executiveSummary', {
-      sprintName: presentation.metadata.sprintName,
-      projectName: 'Command Alkon Project',
-      teamPerformance,
-      keyMetrics
-    });
 
-    // Add section header with enhanced styling
-    doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
-    doc.setFontSize(FONT_SIZES.sectionHeader);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Executive Summary', margin, yPosition);
-    
-    // Add decorative line
-    doc.setDrawColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
-    doc.line(margin, yPosition + 2, margin + 60, yPosition + 2);
-    
-    yPosition += 20;
-    
-    // Add key metrics box
-    if (sprintMetrics) {
-      yPosition = this.addKeyMetricsBox(doc, sprintMetrics, allIssues, yPosition, margin, contentWidth);
-    }
-    
-    // Add AI-generated content
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(FONT_SIZES.body);
-    doc.setFont('helvetica', 'normal');
-    
-    const lines = doc.splitTextToSize(aiContent, contentWidth);
-    doc.text(lines, margin, yPosition);
-    
-    return yPosition + (lines.length * 5) + 20;
-  }
 
-  private async addDemoStoriesWithImages(
+  private async addDetailedDemos(
     doc: jsPDF,
     presentation: GeneratedPresentation,
     allIssues: Issue[],
     yPosition: number,
     margin: number,
     contentWidth: number,
-    demoStoryScreenshots?: Record<string, string>
+    demoStoryScreenshots?: Record<string, string>,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<number> {
     const demoImages = this.extractDemoImages(presentation, allIssues, demoStoryScreenshots);
     const demoStorySlides = presentation.slides.filter(slide => slide.type === 'demo-story');
@@ -403,7 +399,7 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
       doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
       doc.setFontSize(FONT_SIZES.sectionHeader);
       doc.setFont('helvetica', 'bold');
-      doc.text('Demo Stories with Visual Context', margin, yPosition);
+      doc.text('Detailed Demos', margin, yPosition);
       
       yPosition += 15;
       
@@ -419,7 +415,7 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
     doc.setFontSize(FONT_SIZES.sectionHeader);
     doc.setFont('helvetica', 'bold');
-    doc.text('Demo Stories with Visual Context', margin, yPosition);
+    doc.text('Detailed Demos', margin, yPosition);
     
     yPosition += 15;
 
@@ -428,12 +424,12 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
       if (!issue) continue;
 
       // Check if we need a page break before starting a new story
-      if (yPosition > pageHeight - 120) {
+      if (yPosition > pageHeight - 100) {
         doc.addPage();
         yPosition = 40;
       }
 
-      // Story header with overflow protection
+      // Story header - concise title
       doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -441,71 +437,34 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
       const storyTitle = `${issue.key}: ${issue.summary}`;
       const titleLines = doc.splitTextToSize(storyTitle, contentWidth);
       
-      // Check if title fits on current page
-      if (yPosition + (titleLines.length * 5) > pageHeight - 100) {
-        doc.addPage();
-        yPosition = 40;
-      }
-      
       doc.text(titleLines, margin, yPosition);
       yPosition += (titleLines.length * 5) + 8;
 
-      // Generate AI content for this story
+      // Get AI-generated summary if available - use concise version
+      const demoSummary = additionalData?.summaries?.demoStories?.[slide.storyId || ''] || '';
+      
+      // Generate concise AI content for this story
       const aiContent = await this.generateAIContent('demoStoryContent', {
         issueKey: issue.key,
         issueSummary: issue.summary,
         assignee: issue.assignee || 'Unassigned',
         storyPoints: issue.storyPoints || 'Not estimated',
         status: issue.status,
-        content: typeof slide.content === 'string' ? slide.content : 'No content available',
+        content: demoSummary || (typeof slide.content === 'string' ? slide.content : 'No content available'),
         hasScreenshot: demoImages.has(slide.storyId || '')
       });
 
-      // Add AI-generated content with overflow protection
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(FONT_SIZES.body);
-      doc.setFont('helvetica', 'normal');
+      // Add concise AI-generated content with markdown rendering
+      yPosition = this.renderMarkdownContent(doc, aiContent, yPosition, margin, contentWidth);
       
-      const lines = doc.splitTextToSize(aiContent, contentWidth);
-      
-      // Process content line by line with page break handling
-      let currentY = yPosition;
-      let storyContinued = false;
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
-        // Check if we need a page break
-        if (currentY > pageHeight - 50) {
-          doc.addPage();
-          currentY = 40;
-          
-          // Add continuation indicator for the first line on new page
-          if (!storyContinued) {
-            doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'italic');
-            doc.text(`${issue.key} (continued)`, margin, currentY);
-            currentY += 8;
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(FONT_SIZES.body);
-            doc.setFont('helvetica', 'normal');
-            storyContinued = true;
-          }
-        }
-        
-        doc.text(line, margin, currentY);
-        currentY += 5;
-      }
-      
-      yPosition = currentY + 10;
+      yPosition += 8;
 
-      // Add screenshot if available (with overflow protection)
+      // Add screenshot if available - smaller size for better flow
       const screenshot = demoImages.get(slide.storyId || '');
       if (screenshot && this.isValidImageData(screenshot)) {
         try {
-          const imageWidth = 80;
-          const imageHeight = 60;
+          const imageWidth = 60; // Smaller image
+          const imageHeight = 45;
           
           // Check if image fits on current page
           if (yPosition + imageHeight > pageHeight - 50) {
@@ -516,7 +475,7 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
           // Determine image format and add accordingly
           const imageFormat = this.getImageFormat(screenshot);
           doc.addImage(screenshot, imageFormat, margin, yPosition, imageWidth, imageHeight);
-          yPosition += imageHeight + 15;
+          yPosition += imageHeight + 10; // Less spacing
         } catch (error) {
           console.warn('Failed to add screenshot:', error);
           // Continue without the image
@@ -533,7 +492,23 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     allIssues: Issue[],
     yPosition: number,
     margin: number,
-    contentWidth: number
+    contentWidth: number,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<number> {
     // Generate AI content
     const velocity = sprintMetrics ? `${sprintMetrics.completedTotalPoints} story points` : 'not available';
@@ -555,82 +530,264 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
     
     yPosition += 15;
     
-    // Add AI-generated content
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(FONT_SIZES.body);
-    doc.setFont('helvetica', 'normal');
+    // Add AI-generated content with markdown rendering
+    yPosition = this.renderMarkdownContent(doc, aiContent, yPosition, margin, contentWidth);
     
-    const lines = doc.splitTextToSize(aiContent, contentWidth);
-    doc.text(lines, margin, yPosition);
-    
-    yPosition += (lines.length * 5) + 20;
+    yPosition += 20;
 
-    // Add performance charts if metrics are available
-    if (sprintMetrics) {
-      yPosition = await this.addPerformanceCharts(doc, sprintMetrics, allIssues, yPosition, margin, contentWidth);
+    // Add upcoming sprint summary if available
+    if (additionalData?.summaries?.upcomingSprint) {
+      yPosition = await this.addUpcomingSprintSummary(doc, additionalData.summaries.upcomingSprint, yPosition, margin, contentWidth);
     }
     
     return yPosition;
   }
 
-  private addKeyMetricsBox(
+  private async addSprintSummary(
     doc: jsPDF,
-    sprintMetrics: SprintMetrics,
-    allIssues: Issue[],
+    sprintSummary: string,
+    yPosition: number,
+    margin: number,
+    contentWidth: number
+  ): Promise<number> {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Check if we need a page break
+    if (yPosition > pageHeight - 150) {
+      doc.addPage();
+      yPosition = 40;
+    }
+    
+    // Add section header
+    doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+    doc.setFontSize(FONT_SIZES.sectionHeader);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Sprint Summary', margin, yPosition);
+    yPosition += 15;
+    
+    // Add description
+    doc.setTextColor(COLORS.grayText[0], COLORS.grayText[1], COLORS.grayText[2]);
+    doc.setFontSize(FONT_SIZES.body);
+    doc.setFont('helvetica', 'normal');
+    doc.text('AI-generated summary of the current sprint performance and achievements', margin, yPosition);
+    yPosition += 15;
+    
+    // Add sprint content with markdown rendering
+    yPosition = this.renderMarkdownContent(doc, sprintSummary, yPosition, margin, contentWidth);
+    
+    return yPosition + 20;
+  }
+
+  private async addUpcomingSprintSummary(
+    doc: jsPDF,
+    upcomingSprintSummary: string,
+    yPosition: number,
+    margin: number,
+    contentWidth: number
+  ): Promise<number> {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Check if we need a page break
+    if (yPosition > pageHeight - 150) {
+      doc.addPage();
+      yPosition = 40;
+    }
+    
+    // Add section header
+    doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+    doc.setFontSize(FONT_SIZES.sectionHeader);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Upcoming Sprint Summary', margin, yPosition);
+    yPosition += 15;
+    
+    // Add description
+    doc.setTextColor(COLORS.grayText[0], COLORS.grayText[1], COLORS.grayText[2]);
+    doc.setFontSize(FONT_SIZES.body);
+    doc.setFont('helvetica', 'normal');
+    doc.text('AI-generated summary of the upcoming sprint planning and objectives', margin, yPosition);
+    yPosition += 15;
+    
+    // Add upcoming sprint content with markdown rendering
+    yPosition = this.renderMarkdownContent(doc, upcomingSprintSummary, yPosition, margin, contentWidth);
+    
+    return yPosition + 20;
+  }
+
+  private renderMarkdownContent(
+    doc: jsPDF,
+    markdownContent: string,
     yPosition: number,
     margin: number,
     contentWidth: number
   ): number {
-    // Calculate metrics
-    const completedIssues = allIssues.filter(issue => 
-      isIssueCompleted(issue.status)
-    ).length;
-    const completionRate = allIssues.length > 0 ? Math.round((completedIssues / allIssues.length) * 100) : 0;
-    const velocityRate = sprintMetrics.estimatedPoints > 0 ? 
-      Math.round((sprintMetrics.completedTotalPoints / sprintMetrics.estimatedPoints) * 100) : 0;
-    const qualityScore = this.calculateQualityScore(sprintMetrics.qualityChecklist);
-
-    // Create metrics box
-    const boxWidth = contentWidth;
-    const boxHeight = 40;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let currentY = yPosition;
     
-    // Box background
-    doc.setFillColor(245, 247, 250);
-    doc.rect(margin, yPosition, boxWidth, boxHeight, 'F');
+    // Split content into lines
+    const lines = markdownContent.split('\n');
     
-    // Box border
-    doc.setDrawColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
-    doc.rect(margin, yPosition, boxWidth, boxHeight);
-    
-    // Metrics content
-    const metrics = [
-      { label: 'Velocity', value: `${velocityRate}%`, color: velocityRate >= 80 ? [16, 185, 129] : velocityRate >= 60 ? [245, 158, 11] : [239, 68, 68] },
-      { label: 'Completion', value: `${completionRate}%`, color: completionRate >= 80 ? [16, 185, 129] : completionRate >= 60 ? [245, 158, 11] : [239, 68, 68] },
-      { label: 'Quality', value: `${qualityScore}%`, color: qualityScore >= 80 ? [16, 185, 129] : qualityScore >= 60 ? [245, 158, 11] : [239, 68, 68] },
-      { label: 'Test Coverage', value: `${sprintMetrics.testCoverage}%`, color: sprintMetrics.testCoverage >= 80 ? [16, 185, 129] : sprintMetrics.testCoverage >= 60 ? [245, 158, 11] : [239, 68, 68] }
-    ];
-    
-    const metricWidth = boxWidth / metrics.length;
-    const startY = yPosition + 8;
-    
-    metrics.forEach((metric, index) => {
-      const x = margin + (index * metricWidth) + (metricWidth / 2);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
       
-      // Metric value
-      doc.setTextColor(metric.color[0], metric.color[1], metric.color[2]);
-      doc.setFontSize(FONT_SIZES.sectionHeader);
-      doc.setFont('helvetica', 'bold');
-      doc.text(metric.value, x, startY, { align: 'center' });
+      // Check if we need a page break
+      if (currentY > pageHeight - 50) {
+        doc.addPage();
+        currentY = 40;
+      }
       
-      // Metric label
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(FONT_SIZES.small);
-      doc.setFont('helvetica', 'normal');
-      doc.text(metric.label, x, startY + 12, { align: 'center' });
-    });
+      // Handle different markdown elements
+      if (line.startsWith('### ')) {
+        // Level 3 heading
+        const headingText = line.substring(4);
+        doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+        doc.setFontSize(FONT_SIZES.sectionHeader);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * 6) + 8;
+        
+      } else if (line.startsWith('- **') && line.includes(':**')) {
+        // Bold list item with colon
+        const parts = line.split(':**');
+        const boldPart = parts[0].substring(4); // Remove "- **"
+        const regularPart = parts.slice(1).join(':**');
+        
+        // Render bold part
+        doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
+        doc.setFontSize(FONT_SIZES.body);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`• ${boldPart}:`, margin, currentY);
+        
+        // Calculate position for regular text
+        const boldWidth = doc.getTextWidth(`• ${boldPart}:`);
+        const regularX = margin + boldWidth + 2;
+        
+        // Render regular part
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        const regularLines = doc.splitTextToSize(regularPart, contentWidth - boldWidth - 2);
+        doc.text(regularLines, regularX, currentY);
+        currentY += (regularLines.length * 5) + 8;
+        
+      } else if (line.startsWith('- ')) {
+        // Regular list item
+        const listText = line.substring(2);
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(FONT_SIZES.body);
+        doc.setFont('helvetica', 'normal');
+        
+        const listLines = doc.splitTextToSize(`• ${listText}`, contentWidth);
+        doc.text(listLines, margin, currentY);
+        currentY += (listLines.length * 5) + 4;
+        
+      } else if (line.startsWith('**') && line.endsWith('**')) {
+        // Bold text
+        const boldText = line.substring(2, line.length - 2);
+        doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
+        doc.setFontSize(FONT_SIZES.body);
+        doc.setFont('helvetica', 'bold');
+        
+        const boldLines = doc.splitTextToSize(boldText, contentWidth);
+        doc.text(boldLines, margin, currentY);
+        currentY += (boldLines.length * 5) + 4;
+        
+      } else if (line.length > 0) {
+        // Regular paragraph text
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(FONT_SIZES.body);
+        doc.setFont('helvetica', 'normal');
+        
+        const textLines = doc.splitTextToSize(line, contentWidth);
+        doc.text(textLines, margin, currentY);
+        currentY += (textLines.length * 5) + 4;
+        
+      } else {
+        // Empty line - add spacing
+        currentY += 6;
+      }
+    }
     
-    return yPosition + boxHeight + 15;
+    return currentY;
   }
+
+  private async addSprintComparison(
+    doc: jsPDF,
+    sprintComparison: any,
+    yPosition: number,
+    margin: number,
+    contentWidth: number
+  ): Promise<number> {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Check if we need a page break
+    if (yPosition > pageHeight - 150) {
+      doc.addPage();
+      yPosition = 40;
+    }
+    
+    // Add section header
+    doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+    doc.setFontSize(FONT_SIZES.sectionHeader);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Sprint Comparison & Trends', margin, yPosition);
+    yPosition += 15;
+    
+    // Add comparison metrics
+    if (sprintComparison.comparisonMetrics) {
+      const metrics = sprintComparison.comparisonMetrics;
+      const metricItems = [
+        { label: 'Velocity Trend', value: metrics.velocityTrend, color: metrics.velocityTrend >= 0 ? [16, 185, 129] : [239, 68, 68] },
+        { label: 'Quality Trend', value: metrics.qualityTrend, color: metrics.qualityTrend >= 0 ? [16, 185, 129] : [239, 68, 68] },
+        { label: 'Completion Trend', value: metrics.completionRateTrend, color: metrics.completionRateTrend >= 0 ? [16, 185, 129] : [239, 68, 68] },
+        { label: 'Team Performance', value: metrics.teamPerformanceTrend, color: metrics.teamPerformanceTrend >= 0 ? [16, 185, 129] : [239, 68, 68] }
+      ];
+      
+      // Create comparison box
+      const boxWidth = contentWidth;
+      const boxHeight = 30;
+      
+      // Box background
+      doc.setFillColor(245, 247, 250);
+      doc.rect(margin, yPosition, boxWidth, boxHeight, 'F');
+      
+      // Box border
+      doc.setDrawColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+      doc.rect(margin, yPosition, boxWidth, boxHeight);
+      
+      // Metrics content
+      const metricWidth = boxWidth / metricItems.length;
+      const startY = yPosition + 8;
+      
+      metricItems.forEach((metric, index) => {
+        const x = margin + (index * metricWidth) + (metricWidth / 2);
+        const trendIcon = metric.value >= 0 ? '↗' : '↘';
+        const trendText = `${trendIcon} ${Math.abs(metric.value)}%`;
+        
+        // Metric value
+        doc.setTextColor(metric.color[0], metric.color[1], metric.color[2]);
+        doc.setFontSize(FONT_SIZES.body);
+        doc.setFont('helvetica', 'bold');
+        doc.text(trendText, x, startY, { align: 'center' });
+        
+        // Metric label
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(FONT_SIZES.small);
+        doc.setFont('helvetica', 'normal');
+        doc.text(metric.label, x, startY + 12, { align: 'center' });
+      });
+      
+      yPosition += boxHeight + 15;
+    }
+    
+    return yPosition;
+  }
+
+
+
+
+
+
 
   private async addPerformanceCharts(
     doc: jsPDF,
@@ -918,9 +1075,9 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
   }
 
   private generateExecutiveSummaryContent(context: Record<string, any>): string {
-    const { sprintName, teamPerformance, keyMetrics } = context;
+    const { sprintName, projectName, teamPerformance, keyMetrics } = context;
     
-    return `The ${sprintName} sprint demonstrated strong team performance with ${teamPerformance}. Key achievements include significant progress on core deliverables and improved velocity metrics.
+    return `The ${sprintName} sprint for ${projectName} demonstrated strong team performance with ${teamPerformance}. Key achievements include significant progress on core deliverables and improved velocity metrics.
 
 Sprint health indicators show ${keyMetrics}, reflecting the team's commitment to quality and timely delivery. Risk factors have been effectively managed through proactive communication and adaptive planning.
 
@@ -930,11 +1087,11 @@ Strategic alignment remains strong with business objectives, ensuring continued 
   private generateDemoStoryContent(context: Record<string, any>): string {
     const { issueKey, issueSummary, assignee, storyPoints, status } = context;
     
-    return `The ${issueKey} story, "${issueSummary}", represents a significant enhancement to our user experience. Led by ${assignee}, this ${storyPoints}-point story has been successfully completed and demonstrates our commitment to delivering high-quality features.
+    return `**${issueKey}** - ${issueSummary}
 
-The implementation showcases technical excellence while maintaining focus on business value. The feature addresses key user needs and aligns with our strategic objectives, providing measurable impact on user satisfaction and operational efficiency.
+This ${storyPoints}-point story was completed by ${assignee} and delivers ${status === 'Done' ? 'successful' : 'ongoing'} implementation of key functionality. The feature enhances user experience and aligns with our technical standards.
 
-This story exemplifies our team's ability to balance technical complexity with business requirements, ensuring that every deliverable contributes to our overall product vision and user success.`;
+**Key Impact:** Improved user workflow and system performance.`;
   }
 
   private generateSprintAnalysisContent(context: Record<string, any>): string {

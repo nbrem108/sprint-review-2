@@ -34,15 +34,15 @@ interface PresentationControlsProps {
   isExportingMarkdown: boolean
   isExportingDigest: boolean
   isExportingAdvancedDigest: boolean
+  isExportingExecutive: boolean
   onPrevSlide: () => void
   onNextSlide: () => void
   onTogglePlay: () => void
   onToggleFullscreen: () => void
-  onExportHTML: () => void
   onExportMarkdown: () => void
-  onExportPDF: () => void
   onExportDigest: () => void
   onExportAdvancedDigest: () => void
+  onExportExecutive: () => void
   onShowShortcuts: () => void
   onGoToSlide: (index: number) => void
 }
@@ -56,15 +56,15 @@ export function PresentationControls({
   isExportingMarkdown,
   isExportingDigest,
   isExportingAdvancedDigest,
+  isExportingExecutive,
   onPrevSlide,
   onNextSlide,
   onTogglePlay,
   onToggleFullscreen,
-  onExportHTML,
   onExportMarkdown,
-  onExportPDF,
   onExportDigest,
   onExportAdvancedDigest,
+  onExportExecutive,
   onShowShortcuts,
   onGoToSlide,
 }: PresentationControlsProps) {
@@ -140,37 +140,29 @@ export function PresentationControls({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem 
-                onClick={onExportPDF}
+                onClick={onExportAdvancedDigest}
+                disabled={isExportingAdvancedDigest}
                 className="gap-2 cursor-pointer"
               >
-                <Download className="w-4 h-4 opacity-60" />
-                PDF Export
+                {isExportingAdvancedDigest ? (
+                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
+                ) : (
+                  <FileBarChart className="w-4 h-4 opacity-60" />
+                )}
+                Advanced Digest
               </DropdownMenuItem>
               
               <DropdownMenuItem 
-                onClick={onExportHTML}
-                disabled={isExporting}
+                onClick={onExportExecutive}
+                disabled={isExportingExecutive}
                 className="gap-2 cursor-pointer"
               >
-                {isExporting ? (
+                {isExportingExecutive ? (
                   <Loader2 className="w-4 h-4 animate-spin opacity-60" />
                 ) : (
-                  <FileCode className="w-4 h-4 opacity-60" />
+                  <FileBarChart className="w-4 h-4 opacity-60" />
                 )}
-                HTML Export
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                onClick={onExportMarkdown}
-                disabled={isExportingMarkdown}
-                className="gap-2 cursor-pointer"
-              >
-                {isExportingMarkdown ? (
-                  <Loader2 className="w-4 h-4 animate-spin opacity-60" />
-                ) : (
-                  <FileText className="w-4 h-4 opacity-60" />
-                )}
-                Markdown Export
+                Executive Summary
               </DropdownMenuItem>
               
               <DropdownMenuItem 
@@ -187,16 +179,16 @@ export function PresentationControls({
               </DropdownMenuItem>
               
               <DropdownMenuItem 
-                onClick={onExportAdvancedDigest}
-                disabled={isExportingAdvancedDigest}
+                onClick={onExportMarkdown}
+                disabled={isExportingMarkdown}
                 className="gap-2 cursor-pointer"
               >
-                {isExportingAdvancedDigest ? (
+                {isExportingMarkdown ? (
                   <Loader2 className="w-4 h-4 animate-spin opacity-60" />
                 ) : (
-                  <FileBarChart className="w-4 h-4 opacity-60" />
+                  <FileText className="w-4 h-4 opacity-60" />
                 )}
-                Advanced Digest
+                Markdown Export
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

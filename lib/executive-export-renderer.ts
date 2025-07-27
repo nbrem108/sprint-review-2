@@ -23,7 +23,23 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     upcomingIssues: Issue[],
     sprintMetrics: SprintMetrics | null | undefined,
     options: ExportOptions,
-    onProgress?: (progress: ExportProgress) => void
+    onProgress?: (progress: ExportProgress) => void,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<ExportResult> {
     const startTime = Date.now();
 
@@ -44,7 +60,8 @@ export class ExecutiveExportRenderer implements ExportRenderer {
         upcomingIssues,
         sprintMetrics,
         options,
-        onProgress
+        onProgress,
+        additionalData
       );
 
       // Create blob
@@ -84,7 +101,23 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     upcomingIssues: Issue[],
     sprintMetrics: SprintMetrics | null | undefined,
     options: ExportOptions,
-    onProgress?: (progress: ExportProgress) => void
+    onProgress?: (progress: ExportProgress) => void,
+    additionalData?: {
+      selectedProject?: { id: string; key: string; name: string } | null
+      selectedBoard?: { id: string; name: string; type: string } | null
+      selectedSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      upcomingSprint?: { id: string; name: string; startDate?: string; endDate?: string } | null
+      sprintComparison?: any
+      sprintTrends?: any
+      summaries?: {
+        currentSprint?: string
+        upcomingSprint?: string
+        demoStories?: Record<string, string>
+      }
+      corporateSlides?: any[]
+      additionalSlides?: any[]
+      quarterlyPlanSlide?: any
+    }
   ): Promise<string> {
     // Update progress
     this.updateProgress(onProgress, {
@@ -155,6 +188,13 @@ export class ExecutiveExportRenderer implements ExportRenderer {
         .header .subtitle {
             font-size: 1.2rem;
             opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .project-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-weight: 400;
         }
 
         .content {
@@ -269,6 +309,162 @@ export class ExecutiveExportRenderer implements ExportRenderer {
             border-bottom: none;
         }
 
+        .quality-grid {
+            margin-bottom: 2rem;
+        }
+
+        .quality-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .quality-item {
+            background: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .quality-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .quality-header h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .quality-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-yes { background: #dcfce7; color: #166534; }
+        .status-partial { background: #fef3c7; color: #92400e; }
+        .status-no { background: #fee2e2; color: #991b1b; }
+        .status-na { background: #f3f4f6; color: #6b7280; }
+
+        .quality-item p {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .score-summary {
+            margin-bottom: 2rem;
+        }
+
+        .score-card {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-card.score-excellent { border-left-color: #10b981; }
+        .score-card.score-good { border-left-color: #3b82f6; }
+        .score-card.score-needs-improvement { border-left-color: #f59e0b; }
+
+        .score-main {
+            text-align: left;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-description {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .score-details {
+            text-align: right;
+        }
+
+        .score-details p {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0.25rem 0;
+        }
+
+        .copy-friendly-note {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .copy-friendly-note p {
+            margin: 0;
+            color: #0c4a6e;
+            font-size: 0.9rem;
+        }
+
+        .copy-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .copy-section h3 {
+            color: #374151;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .copy-content {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin-bottom: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .copy-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .copy-button:hover {
+            background: #2563eb;
+        }
+
+        .copy-button:active {
+            background: #1d4ed8;
+        }
+
         .footer {
             background: #f8fafc;
             padding: 2rem;
@@ -289,7 +485,15 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     <div class="container">
         <div class="header">
             <h1>Executive Summary</h1>
-            <div class="subtitle">${presentation.metadata.sprintName} - ${new Date(presentation.createdAt).toLocaleDateString()}</div>
+            <div class="subtitle">
+                ${additionalData?.selectedProject?.name || 'Project'} - ${presentation.metadata.sprintName}
+            </div>
+            <div class="project-details">
+                ${additionalData?.selectedProject?.key ? `Project Key: ${additionalData.selectedProject.key}` : ''}
+                ${additionalData?.selectedBoard?.name ? ` | Board: ${additionalData.selectedBoard.name}` : ''}
+                ${additionalData?.selectedSprint?.startDate && additionalData?.selectedSprint?.endDate ? 
+                  ` | Sprint Period: ${additionalData.selectedSprint.startDate} - ${additionalData.selectedSprint.endDate}` : ''}
+            </div>
         </div>
 
         <div class="content">
@@ -343,6 +547,39 @@ export class ExecutiveExportRenderer implements ExportRenderer {
                 </div>
             </div>
 
+            <!-- Quality & Standards Overview -->
+            <div class="section">
+                <h2>Quality & Standards Overview</h2>
+                <div class="copy-friendly-note">
+                    <p><strong>💡 Copy-friendly format below for Smartsheet integration</strong></p>
+                </div>
+                <div class="quality-grid">
+                    ${this.generateQualityStandardsHTML(sprintMetrics)}
+                </div>
+                <div class="copy-section">
+                    <h3>Copy-Paste Format for Smartsheet</h3>
+                    <div class="copy-content" id="qualityCopyContent">
+                        ${this.generateCopyFriendlyQualityText(sprintMetrics)}
+                    </div>
+                    <button class="copy-button" onclick="copyToClipboard('qualityCopyContent')">📋 Copy Quality Data</button>
+                </div>
+            </div>
+
+            <!-- Sprint Score Summary -->
+            <div class="section">
+                <h2>Sprint Score Summary</h2>
+                <div class="score-summary">
+                    ${this.generateScoreSummaryHTML(sprintMetrics)}
+                </div>
+                <div class="copy-section">
+                    <h3>Copy-Paste Format for Smartsheet</h3>
+                    <div class="copy-content" id="scoreCopyContent">
+                        ${this.generateCopyFriendlyScoreText(sprintMetrics)}
+                    </div>
+                    <button class="copy-button" onclick="copyToClipboard('scoreCopyContent')">📋 Copy Score Data</button>
+                </div>
+            </div>
+
             <!-- Strategic Recommendations -->
             <div class="section">
                 <h2>Strategic Recommendations</h2>
@@ -359,6 +596,29 @@ export class ExecutiveExportRenderer implements ExportRenderer {
             <p>Generated by Sprint Review Deck Generator | ${new Date().toLocaleDateString()}</p>
         </div>
     </div>
+
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#3b82f6';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                alert('Copy failed. Please select and copy manually.');
+            });
+        }
+    </script>
 </body>
 </html>`;
 
@@ -470,6 +730,182 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     const timestamp = new Date().toISOString().split('T')[0];
     const sprintName = presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_');
     return `Executive_Summary_${sprintName}_${timestamp}.html`;
+  }
+
+  private generateQualityStandardsHTML(sprintMetrics: SprintMetrics | null | undefined): string {
+    if (!sprintMetrics?.qualityChecklist) {
+      return '<p>No quality checklist data available</p>';
+    }
+
+    const qualityItems = [
+      { key: 'sprintCommitment', label: 'Sprint Commitment', description: 'Met sprint commitment goals' },
+      { key: 'velocity', label: 'Velocity', description: 'Achieved velocity targets' },
+      { key: 'testCoverage', label: 'Test Code Coverage', description: 'Met coverage requirements' },
+      { key: 'testAutomation', label: 'Test Automation', description: 'Followed automation standards' },
+      { key: 'uiUxStandards', label: 'UI/UX Standards', description: 'Maintained design standards' },
+      { key: 'internationalFirst', label: 'International First', description: 'Met i18n requirements' },
+      { key: 'mobileResponsive', label: 'Mobile Responsive', description: 'Achieved mobile responsiveness' },
+      { key: 'featurePermissions', label: 'Feature Permissions', description: 'Implemented permission requirements' },
+      { key: 'releaseNotes', label: 'Release Notes', description: 'Created release documentation' },
+      { key: 'howToVideos', label: 'How To Videos', description: 'Created instructional videos' }
+    ];
+
+    return `
+      <div class="quality-items">
+        ${qualityItems.map(item => {
+          const value = sprintMetrics.qualityChecklist[item.key as keyof typeof sprintMetrics.qualityChecklist];
+          let statusClass = '';
+          let statusText = '';
+          
+          switch (value) {
+            case 'yes':
+              statusClass = 'status-yes';
+              statusText = '✓ Yes';
+              break;
+            case 'partial':
+              statusClass = 'status-partial';
+              statusText = '⚠ Partial';
+              break;
+            case 'no':
+              statusClass = 'status-no';
+              statusText = '✗ No';
+              break;
+            case 'na':
+              statusClass = 'status-na';
+              statusText = 'N/A';
+              break;
+            default:
+              statusClass = 'status-na';
+              statusText = 'N/A';
+          }
+          
+          return `
+            <div class="quality-item">
+              <div class="quality-header">
+                <h4>${item.label}</h4>
+                <span class="quality-status ${statusClass}">${statusText}</span>
+              </div>
+              <p>${item.description}</p>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  private generateScoreSummaryHTML(sprintMetrics: SprintMetrics | null | undefined): string {
+    if (!sprintMetrics?.qualityChecklist) {
+      return '<p>No quality data available for scoring</p>';
+    }
+
+    const overallScore = this.calculateQualityScore(sprintMetrics.qualityChecklist);
+    const applicableItems = Object.values(sprintMetrics.qualityChecklist).filter(value => value !== 'na').length;
+    
+    let scoreClass = '';
+    let scoreText = '';
+    
+    if (overallScore >= 80) {
+      scoreClass = 'score-excellent';
+      scoreText = 'Excellent sprint quality';
+    } else if (overallScore >= 60) {
+      scoreClass = 'score-good';
+      scoreText = 'Good sprint quality';
+    } else {
+      scoreClass = 'score-needs-improvement';
+      scoreText = 'Needs improvement';
+    }
+
+    return `
+      <div class="score-card ${scoreClass}">
+        <div class="score-main">
+          <div class="score-value">${overallScore}%</div>
+          <div class="score-description">${scoreText}</div>
+        </div>
+        <div class="score-details">
+          <p>Based on ${applicableItems} applicable standards</p>
+          <p>Yes: 100% • Partial: 50% • No: 0%</p>
+        </div>
+      </div>
+    `;
+  }
+
+  private generateCopyFriendlyQualityText(sprintMetrics: SprintMetrics | null | undefined): string {
+    if (!sprintMetrics?.qualityChecklist) {
+      return 'No quality checklist data available';
+    }
+
+    const qualityItems = [
+      { key: 'sprintCommitment', label: 'Sprint Commitment' },
+      { key: 'velocity', label: 'Velocity' },
+      { key: 'testCoverage', label: 'Test Code Coverage' },
+      { key: 'testAutomation', label: 'Test Automation' },
+      { key: 'uiUxStandards', label: 'UI/UX Standards' },
+      { key: 'internationalFirst', label: 'International First' },
+      { key: 'mobileResponsive', label: 'Mobile Responsive' },
+      { key: 'featurePermissions', label: 'Feature Permissions' },
+      { key: 'releaseNotes', label: 'Release Notes' },
+      { key: 'howToVideos', label: 'How To Videos' }
+    ];
+
+    let copyText = 'QUALITY & STANDARDS CHECKLIST\n';
+    copyText += '=============================\n\n';
+
+    qualityItems.forEach(item => {
+      const value = sprintMetrics.qualityChecklist[item.key as keyof typeof sprintMetrics.qualityChecklist];
+      let statusText = '';
+      
+      switch (value) {
+        case 'yes':
+          statusText = '✓ YES';
+          break;
+        case 'partial':
+          statusText = '⚠ PARTIAL';
+          break;
+        case 'no':
+          statusText = '✗ NO';
+          break;
+        case 'na':
+          statusText = 'N/A';
+          break;
+        default:
+          statusText = 'N/A';
+      }
+      
+      copyText += `${item.label}: ${statusText}\n`;
+    });
+
+    return copyText;
+  }
+
+  private generateCopyFriendlyScoreText(sprintMetrics: SprintMetrics | null | undefined): string {
+    if (!sprintMetrics?.qualityChecklist) {
+      return 'No quality data available for scoring';
+    }
+
+    const overallScore = this.calculateQualityScore(sprintMetrics.qualityChecklist);
+    const applicableItems = Object.values(sprintMetrics.qualityChecklist).filter(value => value !== 'na').length;
+    
+    let scoreText = '';
+    if (overallScore >= 80) {
+      scoreText = 'EXCELLENT';
+    } else if (overallScore >= 60) {
+      scoreText = 'GOOD';
+    } else {
+      scoreText = 'NEEDS IMPROVEMENT';
+    }
+
+    let copyText = 'SPRINT SCORE SUMMARY\n';
+    copyText += '===================\n\n';
+    copyText += `Overall Quality Score: ${overallScore}%\n`;
+    copyText += `Quality Status: ${scoreText}\n`;
+    copyText += `Based on: ${applicableItems} applicable standards\n\n`;
+    copyText += 'Scoring Method:\n';
+    copyText += '- Yes: 100%\n';
+    copyText += '- Partial: 50%\n';
+    copyText += '- No: 0%\n';
+    copyText += '- N/A: Not counted\n';
+
+    return copyText;
   }
 
   private updateProgress(

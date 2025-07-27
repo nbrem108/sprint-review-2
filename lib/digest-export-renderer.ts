@@ -171,7 +171,10 @@ export class DigestExportRenderer implements ExportRenderer {
     // 2. Project Name and Sprint Name
     yPosition = this.addHeaderSection(doc, presentation, yPosition, margin, contentWidth);
 
-    // 3. Sprint Summary
+    // 3. Table of Contents
+    yPosition = this.addTableOfContents(doc, presentation, yPosition, margin, contentWidth);
+
+    // 4. Sprint Summary
     const sprintOverviewSlide = presentation.slides.find(slide => 
       slide.type === 'summary' && slide.title.toLowerCase().includes('overview')
     );
@@ -180,13 +183,13 @@ export class DigestExportRenderer implements ExportRenderer {
       'No sprint summary available';
     yPosition = this.addSprintSummary(doc, summaryContent, pageHeight, margin, contentWidth, yPosition);
 
-    // 4. Detailed Demo Story Summaries
+    // 5. Detailed Demo Story Summaries
     yPosition = this.addDemoStoriesSection(doc, presentation, allIssues, yPosition, margin, contentWidth);
 
-    // 5. Next Sprint Preview Summary
+    // 6. Next Sprint Preview Summary
     yPosition = this.addNextSprintSection(doc, presentation, yPosition, margin, contentWidth);
 
-    // 6. Sprint Metrics (copy-paste friendly tables)
+    // 7. Sprint Metrics (copy-paste friendly tables)
     yPosition = this.addMetricsSection(doc, sprintMetrics, allIssues, yPosition, margin, contentWidth);
 
     // 7. Footer
@@ -269,12 +272,24 @@ export class DigestExportRenderer implements ExportRenderer {
     
     yPosition += 12;
     
-    // Sprint details
+    // Sprint details with better formatting
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text(`Sprint: ${presentation.metadata.sprintName}`, margin, yPosition);
     
     yPosition += 8;
+    
+    // Additional sprint info if available
+    const sprintSlide = presentation.slides.find(slide => slide.type === 'title');
+    if (sprintSlide && typeof sprintSlide.content === 'string') {
+      const sprintInfo = this.extractSprintInfo(sprintSlide.content);
+      if (sprintInfo.period) {
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Period: ${sprintInfo.period}`, margin, yPosition);
+        yPosition += 6;
+      }
+    }
     
     // Date
     doc.setFontSize(12);
@@ -386,7 +401,14 @@ export class DigestExportRenderer implements ExportRenderer {
       // Story content with pagination
       const content = typeof slide.content === 'string' ? slide.content : 'No content available';
       const cleanContent = this.forceBreakLongWords(this.cleanMarkdownContent(content));
-      const lines = doc.splitTextToSize(cleanContent, contentWidth);
+      
+      // Add a brief summary if content is too long
+      const maxContentLength = 500;
+      const displayContent = cleanContent.length > maxContentLength 
+        ? cleanContent.substring(0, maxContentLength) + '... (Content truncated for digest format)'
+        : cleanContent;
+      
+      const lines = doc.splitTextToSize(displayContent, contentWidth);
       const lineHeight = 4;
       
       // Loop through lines and paginate as needed
@@ -728,5 +750,57 @@ export class DigestExportRenderer implements ExportRenderer {
     const timestamp = new Date().toISOString().split('T')[0];
     const sprintName = presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_');
     return `Sprint_Review_Digest_${sprintName}_${timestamp}.pdf`;
+  }
+
+  private extractSprintInfo(content: string): { period?: string; team?: string } {
+    const periodMatch = content.match(/Sprint Period:\s*([^\n]+)/);
+    const teamMatch = content.match(/Team:\s*([^\n]+)/);
+    
+    return {
+      period: periodMatch ? periodMatch[1].trim() : undefined,
+      team: teamMatch ? teamMatch[1].trim() : undefined
+    };
+  }
+
+  private addTableOfContents(
+    doc: jsPDF,
+    presentation: GeneratedPresentation,
+    yPosition: number,
+    margin: number,
+    contentWidth: number
+  ): number {
+    // Section header
+    doc.setTextColor(21, 44, 83);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Table of Contents', margin, yPosition);
+    
+    yPosition += 10;
+    
+    // Define sections
+    const sections = [
+      { title: 'Sprint Summary', page: 1 },
+      { title: 'Demo Stories', page: 1 },
+      { title: 'Next Sprint Preview', page: 1 },
+      { title: 'Sprint Metrics', page: 1 }
+    ];
+    
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    
+    sections.forEach((section, index) => {
+      const lineY = yPosition + (index * 6);
+      doc.text(section.title, margin, lineY);
+      
+      // Add dots and page number
+      const dots = '.'.repeat(Math.floor((contentWidth - 30) / 3));
+      doc.text(dots, margin + 80, lineY);
+      doc.text(section.page.toString(), margin + contentWidth - 10, lineY, { align: 'right' });
+    });
+    
+    yPosition += (sections.length * 6) + 15;
+    
+    return yPosition;
   }
 } 

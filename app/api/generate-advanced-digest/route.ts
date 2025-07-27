@@ -4,7 +4,15 @@ import { AdvancedDigestExportRenderer } from '../../../lib/advanced-digest-rende
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { presentation, allIssues, upcomingIssues, sprintMetrics, options, demoStoryScreenshots } = body;
+    const { 
+      presentation, 
+      allIssues, 
+      upcomingIssues, 
+      sprintMetrics, 
+      options, 
+      demoStoryScreenshots,
+      additionalData 
+    } = body;
 
     // Validate required data
     if (!presentation || !allIssues) {
@@ -25,7 +33,8 @@ export async function POST(request: NextRequest) {
       sprintMetrics,
       options || {},
       undefined, // onProgress callback
-      demoStoryScreenshots || {} // demo story screenshots
+      demoStoryScreenshots || {}, // demo story screenshots
+      additionalData || {} // additional context data
     );
 
     // Return the PDF blob

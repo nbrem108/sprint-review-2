@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
       allIssues, 
       upcomingIssues, 
       sprintMetrics, 
-      options = {} 
+      options = {},
+      demoStoryScreenshots = {}
     } = body
 
     if (!presentation) {

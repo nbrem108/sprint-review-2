@@ -479,107 +479,9 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
     }
   }
 
-  const exportToPDF = async () => {
-    if (!presentation) return
 
-    setIsExporting(true)
-    try {
-      // Call API endpoint for PDF export
-      const response = await fetch('/api/export/pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          presentation,
-          allIssues: state.issues,
-          upcomingIssues: state.upcomingIssues,
-          sprintMetrics: state.metrics,
-          options: { format: 'pdf' }
-        }),
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to export PDF')
-      }
 
-      // Download the file
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${presentation.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast({
-        title: "PDF Export",
-        description: "PDF exported successfully!",
-      })
-    } catch (error) {
-      console.error("Export error:", error)
-      toast({
-        title: "Export Failed",
-        description: "Failed to export PDF. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
-  const exportToHTML = async () => {
-    if (!presentation) return
-
-    setIsExporting(true)
-    try {
-      // Call API endpoint for HTML export
-      const response = await fetch('/api/export/html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          presentation,
-          allIssues: state.issues,
-          upcomingIssues: state.upcomingIssues,
-          sprintMetrics: state.metrics,
-          options: { format: 'html' }
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to export HTML')
-      }
-
-      // Download the file
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${presentation.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.html`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast({
-        title: "HTML Export",
-        description: "HTML exported successfully!",
-      })
-    } catch (error) {
-      console.error("Export error:", error)
-      toast({
-        title: "Export Failed",
-        description: "Failed to export HTML. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsExporting(false)
-    }
-  }
 
   const exportToMarkdown = async () => {
     if (!presentation) return
@@ -714,7 +616,19 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
           upcomingIssues: state.upcomingIssues || [],
           sprintMetrics: state.metrics,
           options: { format: 'advanced-digest', quality: 'high' },
-          demoStoryScreenshots: state.demoStoryScreenshots
+          demoStoryScreenshots: state.demoStoryScreenshots,
+          additionalData: {
+            selectedProject: state.selectedProject,
+            selectedBoard: state.selectedBoard,
+            selectedSprint: state.selectedSprint,
+            upcomingSprint: state.upcomingSprint,
+            sprintComparison: state.sprintComparison,
+            sprintTrends: state.sprintTrends,
+            summaries: state.summaries,
+            corporateSlides: state.corporateSlides,
+            additionalSlides: state.additionalSlides,
+            quarterlyPlanSlide: state.quarterlyPlanSlide
+          }
         }),
       })
 
@@ -1137,58 +1051,6 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem 
-                        onClick={exportToPDF}
-                        disabled={isExporting}
-                        className="gap-2 cursor-pointer"
-                      >
-                        {isExporting ? (
-                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
-                        ) : (
-                          <FileDown className="h-4 w-4 opacity-60" />
-                        )}
-                        PDF Export
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={exportToHTML}
-                        disabled={isExporting}
-                        className="gap-2 cursor-pointer"
-                      >
-                        {isExporting ? (
-                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
-                        ) : (
-                          <FileCode className="h-4 w-4 opacity-60" />
-                        )}
-                        HTML Export
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={exportToMarkdown}
-                        disabled={isExporting}
-                        className="gap-2 cursor-pointer"
-                      >
-                        {isExporting ? (
-                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
-                        ) : (
-                          <FileText className="h-4 w-4 opacity-60" />
-                        )}
-                        Markdown Export
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={exportDigest}
-                        disabled={isExportingDigest}
-                        className="gap-2 cursor-pointer"
-                      >
-                        {isExportingDigest ? (
-                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
-                        ) : (
-                          <FileText className="h-4 w-4 opacity-60" />
-                        )}
-                        Sprint Digest
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
                         onClick={exportAdvancedDigest}
                         disabled={isExportingAdvancedDigest}
                         className="gap-2 cursor-pointer"
@@ -1212,6 +1074,32 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
                           <TrendingUp className="h-4 w-4 opacity-60" />
                         )}
                         Executive Summary
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportDigest}
+                        disabled={isExportingDigest}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExportingDigest ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileText className="h-4 w-4 opacity-60" />
+                        )}
+                        Sprint Digest
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        onClick={exportToMarkdown}
+                        disabled={isExporting}
+                        className="gap-2 cursor-pointer"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin opacity-60" />
+                        ) : (
+                          <FileText className="h-4 w-4 opacity-60" />
+                        )}
+                        Markdown Export
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

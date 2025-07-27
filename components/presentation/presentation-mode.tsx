@@ -82,6 +82,7 @@ export function PresentationMode({
   const [isExportingMarkdown, setIsExportingMarkdown] = useState(false)
   const [isExportingDigest, setIsExportingDigest] = useState(false)
   const [isExportingAdvancedDigest, setIsExportingAdvancedDigest] = useState(false)
+  const [isExportingExecutive, setIsExportingExecutive] = useState(false)
 
   // Function to get all slides in order
   const getAllSlides = useCallback(() => {
@@ -220,67 +221,7 @@ export function PresentationMode({
   }, [])
 
   // Export functions
-  const exportHTML = async () => {
-    setIsExporting(true)
-    try {
-      // Create presentation object for export
-      const presentation = {
-        id: `presentation-${Date.now()}`,
-        title: allSlides[0]?.title || 'Sprint Review',
-        slides: allSlides,
-        createdAt: new Date().toISOString(),
-        metadata: {
-          sprintName: allSlides[0]?.title || 'Sprint Review',
-          totalSlides: allSlides.length,
-          hasMetrics: !!sprintMetrics,
-          demoStoriesCount: allSlides.filter(s => s.type === 'demo-story').length,
-          customSlidesCount: allSlides.filter(s => s.type === 'corporate').length,
-        },
-      }
 
-      // Call API endpoint for HTML export
-      const response = await fetch('/api/export/html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          presentation,
-          allIssues,
-          upcomingIssues,
-          sprintMetrics,
-          options: { format: 'html' }
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to export HTML')
-      }
-
-      // Download the file
-      const blob = await response.blob()
-      const fileName = exportService.generateFileName(presentation, 'html')
-      const result: ExportResult = {
-        blob,
-        fileName,
-        fileSize: blob.size,
-        format: 'html',
-        metadata: {
-          slideCount: presentation.slides.length,
-          processingTime: 0,
-          quality: 'medium'
-        }
-      }
-      exportService.downloadFile(result)
-
-      console.log("HTML export completed successfully")
-    } catch (error) {
-      console.error("Export error:", error)
-      // You could add toast notification here
-    } finally {
-      setIsExporting(false)
-    }
-  }
 
   const exportMarkdown = async () => {
     setIsExportingMarkdown(true)
@@ -373,7 +314,8 @@ export function PresentationMode({
           allIssues,
           upcomingIssues,
           sprintMetrics,
-          options: { format: 'digest' }
+          options: { format: 'digest', quality: 'high' },
+          demoStoryScreenshots
         }),
       })
 
@@ -392,7 +334,7 @@ export function PresentationMode({
         metadata: {
           slideCount: presentation.slides.length,
           processingTime: 0,
-          quality: 'medium'
+          quality: 'high'
         }
       }
       exportService.downloadFile(result)
@@ -469,8 +411,8 @@ export function PresentationMode({
     }
   }
 
-  const exportPDF = async () => {
-    setIsExporting(true)
+  const exportExecutive = async () => {
+    setIsExportingExecutive(true)
     try {
       // Create presentation object for export
       const presentation = {
@@ -487,8 +429,8 @@ export function PresentationMode({
         },
       }
 
-      // Call API endpoint for PDF export
-      const response = await fetch('/api/export/pdf', {
+      // Call API endpoint for Executive export
+      const response = await fetch('/api/export/executive', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -498,38 +440,40 @@ export function PresentationMode({
           allIssues,
           upcomingIssues,
           sprintMetrics,
-          options: { format: 'pdf' }
+          options: { format: 'executive' }
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to export PDF')
+        throw new Error('Failed to export Executive Summary')
       }
 
       // Download the file
       const blob = await response.blob()
-      const fileName = exportService.generateFileName(presentation, 'pdf')
+      const fileName = exportService.generateFileName(presentation, 'html')
       const result: ExportResult = {
         blob,
         fileName,
         fileSize: blob.size,
-        format: 'pdf',
+        format: 'html',
         metadata: {
           slideCount: presentation.slides.length,
           processingTime: 0,
-          quality: 'medium'
+          quality: 'high'
         }
       }
       exportService.downloadFile(result)
 
-      console.log("PDF export completed successfully")
+      console.log("Executive Summary export completed successfully")
     } catch (error) {
       console.error("Export error:", error)
       // You could add toast notification here
     } finally {
-      setIsExporting(false)
+      setIsExportingExecutive(false)
     }
   }
+
+
 
   if (allSlides.length === 0) {
     return (
@@ -556,15 +500,15 @@ export function PresentationMode({
             isExportingMarkdown={isExportingMarkdown}
             isExportingDigest={isExportingDigest}
             isExportingAdvancedDigest={isExportingAdvancedDigest}
+            isExportingExecutive={isExportingExecutive}
             onPrevSlide={prevSlide}
             onNextSlide={nextSlide}
             onTogglePlay={() => setIsPlaying(!isPlaying)}
             onToggleFullscreen={toggleFullscreen}
-            onExportHTML={exportHTML}
             onExportMarkdown={exportMarkdown}
-            onExportPDF={exportPDF}
             onExportDigest={exportDigest}
             onExportAdvancedDigest={exportAdvancedDigest}
+            onExportExecutive={exportExecutive}
             onShowShortcuts={() => setShowShortcuts(true)}
             onGoToSlide={goToSlide}
           />
