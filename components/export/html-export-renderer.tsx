@@ -527,6 +527,8 @@ export class HTMLExportRenderer implements ExportRenderer {
         return this.renderDemoStorySlideHTML(slide, allIssues);
       case 'corporate':
         return this.renderCorporateSlideHTML(slide);
+      case 'qa':
+        return this.renderQASlideHTML(slide);
       default:
         return this.renderDefaultSlideHTML(slide);
     }
@@ -604,11 +606,32 @@ export class HTMLExportRenderer implements ExportRenderer {
 
   private async renderCorporateSlideHTML(slide: PresentationSlide): Promise<string> {
     if (slide.corporateSlideUrl) {
-      return `
-        <div class="corporate-slide">
-          <img src="${slide.corporateSlideUrl}" alt="Corporate slide" style="max-width: 100%; height: auto;" />
-        </div>
-      `;
+      try {
+        // Embed the image using the asset embedder
+        const embeddedImage = await this.assetEmbedder.embedImage(slide.corporateSlideUrl);
+        
+        if (embeddedImage) {
+          return `
+            <div class="corporate-slide">
+              <img src="data:image/jpeg;base64,${embeddedImage}" alt="Corporate slide" style="max-width: 100%; max-height: 100%; object-fit: contain; padding: 20px;" />
+            </div>
+          `;
+        } else {
+          // Fallback to original URL if embedding fails
+          return `
+            <div class="corporate-slide">
+              <img src="${slide.corporateSlideUrl}" alt="Corporate slide" style="max-width: 100%; max-height: 100%; object-fit: contain; padding: 20px;" />
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.warn('Failed to embed corporate slide image:', error);
+        return `
+          <div class="corporate-slide">
+            <img src="${slide.corporateSlideUrl}" alt="Corporate slide" style="max-width: 100%; max-height: 100%; object-fit: contain; padding: 20px;" />
+          </div>
+        `;
+      }
     }
     return '<p>No corporate slide image available</p>';
   }
@@ -619,6 +642,33 @@ export class HTMLExportRenderer implements ExportRenderer {
       <div class="default-slide">
         <div class="markdown-content">
           ${this.markdownToHTML(content)}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderQASlideHTML(slide: PresentationSlide): string {
+    return `
+      <div class="qa-slide">
+        <div class="qa-content">
+          <h2>Questions & Discussion</h2>
+          <p>Thank you for your attention!</p>
+          <div class="qa-summary">
+            <p><strong>Sprint Summary:</strong></p>
+            <ul>
+              <li>✅ Items completed</li>
+              <li>🎯 Stories demonstrated</li>
+              <li>📊 Quality metrics</li>
+            </ul>
+          </div>
+          <div class="qa-next-steps">
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Sprint retrospective</li>
+              <li>Upcoming sprint planning</li>
+              <li>Continuous improvement initiatives</li>
+            </ul>
+          </div>
         </div>
       </div>
     `;

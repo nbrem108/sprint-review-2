@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,12 +28,17 @@ export function SetupTab() {
   const { state, dispatch } = useSprintContext()
   const { toast } = useToast()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [lastReadVersion, setLastReadVersion] = useState<string | undefined>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('lastReadVersion') || undefined
+  const [lastReadVersion, setLastReadVersion] = useState<string | undefined>(undefined)
+  const [isClient, setIsClient] = useState(false)
+
+  // Load lastReadVersion from localStorage only on client side
+  useEffect(() => {
+    setIsClient(true)
+    const stored = localStorage.getItem('lastReadVersion')
+    if (stored) {
+      setLastReadVersion(stored)
     }
-    return undefined
-  })
+  }, [])
 
   const handleMarkAsRead = (version: string) => {
     setLastReadVersion(version)
@@ -225,10 +230,12 @@ export function SetupTab() {
       <SessionManager />
 
       {/* Release Notes */}
-      <ReleaseNotesSection 
-        lastReadVersion={lastReadVersion}
-        onMarkAsRead={handleMarkAsRead}
-      />
+      {isClient && (
+        <ReleaseNotesSection 
+          lastReadVersion={lastReadVersion}
+          onMarkAsRead={handleMarkAsRead}
+        />
+      )}
 
       {/* Sprint Issues */}
       {state.selectedSprint && (

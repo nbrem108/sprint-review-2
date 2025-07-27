@@ -45,7 +45,7 @@ export interface PresentationSlide {
     type: string;
     data: any;
   };
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate";
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa";
   order: number;
   corporateSlideUrl?: string;
   storyId?: string;

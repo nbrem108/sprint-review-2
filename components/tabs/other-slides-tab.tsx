@@ -315,7 +315,7 @@ export function OtherSlidesTab() {
                       <img
                         src={slide.preview || "/placeholder.svg"}
                         alt={slide.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-2"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg?height=200&width=300&text=Image+Error"

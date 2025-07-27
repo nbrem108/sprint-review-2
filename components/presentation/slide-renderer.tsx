@@ -17,7 +17,7 @@ interface PresentationSlide {
     businessValue?: string
     userImpact?: string
   }
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "review-legend"
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "review-legend" | "qa"
   order: number
   corporateSlideUrl?: string // Add this for corporate slides
   storyId?: string // Add the specific story ID for demo story slides
@@ -98,7 +98,7 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
   
   // Enhanced container sizing based on mode - Better fullscreen utilization
   const containerClass = isFullscreen
-    ? "w-full h-full p-3 sm:p-4 lg:p-6 xl:p-8 flex flex-col justify-center min-h-0"
+    ? "w-full h-full flex flex-col justify-center min-h-0"
     : "slide-container mx-auto my-2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center min-h-0 shadow-lg border border-gray-200 rounded-lg bg-white"
 
   // Enhanced typography scaling based on mode - Better fullscreen optimization
@@ -200,7 +200,14 @@ export function SlideRenderer({ slide, allIssues, upcomingIssues, sprintMetrics,
       case "custom":
         return (
           <SlideBackground isFullscreen={isFullscreen}>
-            <CustomSlide slide={slide} containerClass={containerClass} titleClass={titleClass} />
+            <CustomSlide slide={slide} containerClass={containerClass} titleClass={titleClass} isFullscreen={isFullscreen} />
+          </SlideBackground>
+        )
+
+      case "qa":
+        return (
+          <SlideBackground isFullscreen={isFullscreen}>
+            <QASlide slide={slide} containerClass={containerClass} titleClass={titleClass} sprintMetrics={sprintMetrics} allIssues={allIssues} isFullscreen={isFullscreen} />
           </SlideBackground>
         )
 
@@ -799,12 +806,12 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
                 Demo Screenshot
               </h3>
               
-              <div className={`flex items-center justify-center ${isFullscreen ? 'p-2' : 'p-1'}`}>
+              <div className={`flex items-center justify-center ${isFullscreen ? 'p-4 sm:p-6 lg:p-8' : 'p-2 sm:p-4'}`}>
                 {screenshot && !imageError ? (
                   <img
                     src={screenshot}
                     alt="Demo screenshot"
-                    className={`${isFullscreen ? 'max-h-96 lg:max-h-[32rem] xl:max-h-[40rem] 2xl:max-h-[48rem]' : 'max-h-48'} w-full object-contain rounded-lg border border-white/20`}
+                    className={`${isFullscreen ? 'max-h-[80vh]' : 'max-h-64'} w-full object-contain rounded-lg border border-white/20 shadow-sm`}
                     onError={() => setImageError(true)}
                   />
                 ) : (
@@ -828,7 +835,7 @@ const DemoStorySlide: React.FC<{ slide: PresentationSlide; issues: Issue[]; cont
   );
 };
 
-function CustomSlide({ slide, containerClass, titleClass }: any) {
+function CustomSlide({ slide, containerClass, titleClass, isFullscreen }: any) {
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
       {/* Enhanced overlay for better text readability */}
@@ -840,20 +847,20 @@ function CustomSlide({ slide, containerClass, titleClass }: any) {
           <div className="w-12 sm:w-14 lg:w-16 h-1 bg-ca-blue-600 mx-auto rounded-full shadow-sm"></div>
         </div>
 
-        <div className="flex-1 min-h-0 flex items-center justify-center p-4 overflow-hidden">
+        <div className={`flex-1 min-h-0 flex items-center justify-center ${isFullscreen ? '' : 'p-4'} overflow-hidden`}>
           {slide.corporateSlideUrl ? (
             <div className="max-w-full max-h-full w-full h-full flex items-center justify-center">
               <img
                 src={slide.corporateSlideUrl}
                 alt={slide.title}
-                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-sm"
+                className={`${isFullscreen ? 'w-full h-full object-cover' : 'max-w-full max-h-[90vh] object-contain rounded-lg shadow-sm'}`}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   target.nextElementSibling!.classList.remove('hidden');
                 }}
               />
-              <div className="hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-[90vh] overflow-y-auto">
+              <div className={`hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm ${isFullscreen ? 'w-full h-full' : 'max-w-full max-h-[90vh]'} overflow-y-auto`}>
                 <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Image Loading Error</div>
                 <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
                   Unable to load the uploaded image.
@@ -866,7 +873,7 @@ function CustomSlide({ slide, containerClass, titleClass }: any) {
             </div>
           ) : (
             <div className="max-w-full max-h-full w-full h-full flex items-center justify-center">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-[90vh] overflow-y-auto">
+              <div className={`bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm ${isFullscreen ? 'w-full h-full' : 'max-w-full max-h-[90vh]'} overflow-y-auto`}>
                 <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Custom Slide Content</div>
                 <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
                   This slide would display the uploaded image content from the Additional Slides section.
@@ -999,13 +1006,30 @@ function calculateQualityScore(checklist: Record<string, string>): number {
 function CorporateSlide({ slide, containerClass, isFullscreen }: any) {
   return (
     <div className={`${containerClass} relative overflow-hidden`}>
-      {/* Corporate slide image */}
+      {/* Corporate slide image with proper padding and containment */}
       {slide.corporateSlideUrl && (
-        <img
-          src={slide.corporateSlideUrl}
-          alt={slide.title || "Corporate Slide"}
-          className="w-full h-full object-cover max-h-[90vh]"
-        />
+        <div className={`w-full h-full flex items-center justify-center ${isFullscreen ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+          <img
+            src={slide.corporateSlideUrl}
+            alt={slide.title || "Corporate Slide"}
+            className={`${isFullscreen ? 'w-full h-full object-cover' : 'max-w-full max-h-full object-contain rounded-lg shadow-sm'}`}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.nextElementSibling!.classList.remove('hidden');
+            }}
+          />
+          <div className="hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-full overflow-y-auto">
+            <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Image Loading Error</div>
+            <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
+              Unable to load the uploaded image.
+              <br />
+              <span className="text-xs text-gray-500 mt-2 block">
+                Please check the image file in the Corporate Slides section.
+              </span>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Company Logo overlay - positioned in bottom right corner */}
@@ -1023,6 +1047,60 @@ function CorporateSlide({ slide, containerClass, isFullscreen }: any) {
           <h3 className="text-white text-sm font-medium break-words">{slide.title}</h3>
         </div>
       )}
+    </div>
+  )
+}
+
+function QASlide({ slide, containerClass, titleClass, sprintMetrics, allIssues, isFullscreen }: any) {
+  const completedIssues = allIssues.filter((issue: Issue) => isIssueCompleted(issue.status || ""))
+  const completionRate = allIssues.length > 0 ? Math.round((completedIssues.length / allIssues.length) * 100) : 0
+  const qualityScore = sprintMetrics ? calculateQualityScore(sprintMetrics.qualityChecklist) : 0
+  
+  // Calculate sprint performance metrics
+  const velocity = sprintMetrics?.completedTotalPoints || 0
+  const velocityTarget = sprintMetrics?.estimatedPoints || 0
+  const velocityAchievement = velocityTarget > 0 ? Math.round((velocity / velocityTarget) * 100) : 0
+  
+  return (
+    <div className={`${containerClass} relative overflow-hidden`}>
+      {/* Q&A slide background with the uploaded image */}
+      <div className={`w-full h-full flex items-center justify-center ${isFullscreen ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+        <img
+          src="/corporate-slides/q_and_a_slide.jpg"
+          alt="Q&A Slide"
+          className={`${isFullscreen ? 'w-full h-full object-cover' : 'max-w-full max-h-full object-contain rounded-lg shadow-sm'}`}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            target.nextElementSibling!.classList.remove('hidden');
+          }}
+        />
+        <div className="hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6 border border-gray-200 shadow-sm max-w-full max-h-full overflow-y-auto">
+          <div className="text-gray-700 mb-3 text-sm font-semibold text-center">Q&A Slide Image Loading Error</div>
+          <div className="text-xs text-gray-600 leading-relaxed text-center break-words">
+            Unable to load the Q&A slide image.
+          </div>
+        </div>
+      </div>
+      
+      {/* Sprint Summary Overlay - positioned in bottom left */}
+      <div className="absolute bottom-4 left-4 z-10 bg-black/70 backdrop-blur-sm rounded-lg px-4 py-3 max-w-[300px]">
+        <h4 className="text-white text-sm font-semibold mb-2">Sprint Summary</h4>
+        <div className="text-xs text-white/90 space-y-1">
+          <div>✅ {completedIssues.length} items completed ({completionRate}%)</div>
+          <div>🎯 {velocity} / {velocityTarget} story points ({velocityAchievement}%)</div>
+          <div>📊 {qualityScore}% quality score</div>
+        </div>
+      </div>
+      
+      {/* Company Logo overlay - positioned in bottom right corner */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <img 
+          src="/company-logos/CommandAlkon_Logo_Primary_White.svg" 
+          alt="Command Alkon" 
+          className={`${isFullscreen ? 'h-8 w-auto' : 'h-6 w-auto'} opacity-80 hover:opacity-100 transition-opacity drop-shadow-lg`}
+        />
+      </div>
     </div>
   )
 }

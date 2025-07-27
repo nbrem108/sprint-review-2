@@ -283,7 +283,7 @@ export function CorporateSlidesManager({ slides, onSlidesUpdate }: CorporateSlid
                       <img
                         src={slide.localUrl || "/placeholder.svg"}
                         alt={slide.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-1"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg?height=64&width=96&text=Corporate+Slide"

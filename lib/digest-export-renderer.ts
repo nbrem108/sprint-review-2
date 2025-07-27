@@ -11,6 +11,7 @@ import {
 } from './export-service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { isIssueCompleted } from './utils'
 
 const COLORS = {
   brandBlue: [21, 44, 83],
@@ -211,10 +212,10 @@ export class DigestExportRenderer implements ExportRenderer {
     
     // Calculate sprint health metrics
     const totalIssues = allIssues.length;
-    const completedIssues = allIssues.filter(issue => issue.status.toLowerCase().includes('done')).length;
+    const completedIssues = allIssues.filter(issue => isIssueCompleted(issue.status)).length;
     const totalStoryPoints = allIssues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
     const completedStoryPoints = allIssues
-      .filter(issue => issue.status.toLowerCase().includes('done'))
+      .filter(issue => isIssueCompleted(issue.status))
       .reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
     
     const sprintHealthPercentage = sprintMetrics && sprintMetrics.estimatedPoints > 0 
@@ -697,10 +698,10 @@ export class DigestExportRenderer implements ExportRenderer {
     }> = [];
 
     epicGroups.forEach((issues, epic) => {
-      const completed = issues.filter(issue => issue.status.toLowerCase().includes('done')).length;
+      const completed = issues.filter(issue => isIssueCompleted(issue.status)).length;
       const totalPoints = issues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
       const completedPoints = issues
-        .filter(issue => issue.status.toLowerCase().includes('done'))
+        .filter(issue => isIssueCompleted(issue.status))
         .reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
       
       breakdown.push({

@@ -163,11 +163,13 @@ export function ImageUpload({
     <div className={cn("space-y-3", className)}>
       {currentImage ? (
         <div className="relative group">
-          <img
-            src={currentImage}
-            alt="Uploaded screenshot"
-            className="w-full h-48 object-cover rounded-lg border-2 border-dashed border-gray-300"
-          />
+          <div className="w-full h-48 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center p-2">
+            <img
+              src={currentImage}
+              alt="Uploaded screenshot"
+              className="max-w-full max-h-full object-contain rounded"
+            />
+          </div>
           <Button
             type="button"
             variant="destructive"

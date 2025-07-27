@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 
 // Utility function to check if an issue is completed
 export function isIssueCompleted(status: string): boolean {
-  const completedStatuses = ["done", "closed", "resolved"];
+  const completedStatuses = ["done", "closed", "resolved", "complete", "finished", "delivered"];
   return completedStatuses.some(completedStatus => 
     status?.toLowerCase().includes(completedStatus)
   );

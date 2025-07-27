@@ -43,7 +43,13 @@ interface Issue {
   releaseNotes?: string
 }
 
-interface SprintMetrics {
+export interface SprintMetrics {
+  // Sprint Planning Metrics
+  sprintBacklogPlanned: number // How many sprints planned (usually 1)
+  sprintBacklogEstimated: number // How many sprints estimated out (typically 3-4)
+  sprintStoryPointCommitment: number // Story points committed to current sprint
+  
+  // Work Item Metrics
   plannedItems: number
   estimatedPoints: number
   carryForwardPoints: number
@@ -53,6 +59,24 @@ interface SprintMetrics {
   sprintNumber: string
   completedTotalPoints: number
   completedAdjustedPoints: number
+  
+  // Enhanced metrics fields
+  sprintStartDate?: string
+  sprintEndDate?: string
+  teamSize?: number
+  defectCount?: number
+  defectResolutionRate?: number
+  averageCycleTime?: number
+  sprintGoal?: string
+  retrospectiveNotes?: string
+  boardId?: string
+  
+  // Velocity and performance metrics
+  velocity?: number
+  velocityTarget?: number
+  velocityAchievement?: number
+  efficiencyScore?: number
+  qualityScore?: number
   qualityChecklist: {
     sprintCommitment: "yes" | "no" | "partial" | "na"
     velocity: "yes" | "no" | "partial" | "na"
@@ -65,6 +89,39 @@ interface SprintMetrics {
     releaseNotes: "yes" | "no" | "partial" | "na"
     howToVideos: "yes" | "no" | "partial" | "na"
   }
+}
+
+// Historical sprint data for comparison
+export interface HistoricalSprintData {
+  sprintId: string
+  sprintName: string
+  sprintNumber: string
+  startDate: string
+  endDate: string
+  metrics: SprintMetrics
+  createdAt: string
+  updatedAt: string
+}
+
+// Sprint comparison data structure
+export interface SprintComparison {
+  currentSprint: SprintMetrics | null
+  previousSprint1: SprintMetrics | null
+  previousSprint2: SprintMetrics | null
+  comparisonMetrics: {
+    velocityTrend: number // percentage change
+    qualityTrend: number // percentage change
+    completionRateTrend: number // percentage change
+    teamPerformanceTrend: number // percentage change
+  }
+}
+
+// Trend analysis data
+export interface SprintTrends {
+  velocityHistory: Array<{ sprint: string; velocity: number; date: string }>
+  qualityHistory: Array<{ sprint: string; qualityScore: number; date: string }>
+  completionHistory: Array<{ sprint: string; completionRate: number; date: string }>
+  teamPerformanceHistory: Array<{ sprint: string; efficiencyScore: number; date: string }>
 }
 
 interface CorporateSlide {
@@ -89,6 +146,10 @@ interface SprintState {
   demoStories: string[]
   demoStoryScreenshots: Record<string, string> // Base64 encoded screenshots
   metrics: SprintMetrics | null
+  // Historical data and comparison
+  historicalSprints: HistoricalSprintData[]
+  sprintComparison: SprintComparison | null
+  sprintTrends: SprintTrends | null
   summaries: {
     currentSprint?: string
     upcomingSprint?: string
@@ -102,6 +163,7 @@ interface SprintState {
     sprints: boolean
     issues: boolean
     summaries: boolean
+    historicalData: boolean
   }
   currentTab: "setup" | "demo-stories" | "metrics" | "other-slides" | "corporate-slides" | "summaries" | "presentation"
   sessionId: string
@@ -128,7 +190,7 @@ interface PresentationSlide {
   id: string
   title: string
   content: string
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate"
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa"
   order: number
   corporateSlideUrl?: string
   storyId?: string
@@ -145,6 +207,10 @@ type SprintAction =
   | { type: "ADD_DEMO_SCREENSHOT"; payload: { storyId: string; screenshot: string } }
   | { type: "REMOVE_DEMO_SCREENSHOT"; payload: string }
   | { type: "SET_METRICS"; payload: SprintMetrics }
+  | { type: "SET_HISTORICAL_SPRINTS"; payload: HistoricalSprintData[] }
+  | { type: "SET_SPRINT_COMPARISON"; payload: SprintComparison | null }
+  | { type: "SET_SPRINT_TRENDS"; payload: SprintTrends | null }
+  | { type: "SAVE_HISTORICAL_SPRINT"; payload: HistoricalSprintData }
   | { type: "SET_SUMMARIES"; payload: SprintState["summaries"] }
   | { type: "ADD_SLIDE"; payload: File }
   | { type: "REMOVE_SLIDE"; payload: number }
@@ -204,6 +270,9 @@ const serializeStateForStorage = (state: SprintState) => ({
   demoStories: state.demoStories,
   demoStoryScreenshots: state.demoStoryScreenshots,
   metrics: state.metrics,
+  historicalSprints: state.historicalSprints,
+  sprintComparison: state.sprintComparison,
+  sprintTrends: state.sprintTrends,
   summaries: state.summaries,
   corporateSlides: state.corporateSlides,
   generatedPresentation: state.generatedPresentation,
@@ -246,6 +315,9 @@ const initialState: SprintState = {
   demoStories: [],
   demoStoryScreenshots: {},
   metrics: null,
+  historicalSprints: [],
+  sprintComparison: null,
+  sprintTrends: null,
   summaries: {},
   additionalSlides: [],
   corporateSlides: [
@@ -300,6 +372,7 @@ const initialState: SprintState = {
     sprints: false,
     issues: false,
     summaries: false,
+    historicalData: false,
   },
   currentTab: "setup",
   sessionId: generateSessionId(),
@@ -385,6 +458,24 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
     case "SET_METRICS":
       newState = { ...state, metrics: action.payload }
       break
+    case "SET_HISTORICAL_SPRINTS":
+      newState = { ...state, historicalSprints: action.payload }
+      break
+    case "SET_SPRINT_COMPARISON":
+      newState = { ...state, sprintComparison: action.payload }
+      break
+    case "SET_SPRINT_TRENDS":
+      newState = { ...state, sprintTrends: action.payload }
+      break
+    case "SAVE_HISTORICAL_SPRINT":
+      newState = {
+        ...state,
+        historicalSprints: [
+          ...state.historicalSprints.filter(s => s.sprintId !== action.payload.sprintId),
+          action.payload
+        ]
+      }
+      break
     case "SET_SUMMARIES":
       newState = { ...state, summaries: { ...state.summaries, ...action.payload } }
       break
@@ -413,6 +504,7 @@ function sprintReducer(state: SprintState, action: SprintAction): SprintState {
         demoStories: [],
         demoStoryScreenshots: {},
         metrics: null,
+        sprintComparison: null,
         summaries: {},
         additionalSlides: [],
       }

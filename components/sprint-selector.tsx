@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { useSprintContext } from "@/components/sprint-context"
 import { fetchJiraSprints, fetchJiraSprintIssues } from "@/lib/jira-api"
+import { createSprintComparisonFromJira, generateSprintTrendsFromJira } from "@/lib/sprint-comparison-utils"
 import { cn } from "@/lib/utils"
 
 export function SprintSelector() {
@@ -61,6 +62,61 @@ export function SprintSelector() {
       // Don't show error to user, just log it
     } finally {
       dispatch({ type: "SET_LOADING", payload: { key: "issues", value: false } })
+    }
+
+    // Load historical sprint data and create comparison using Jira API data
+    dispatch({ type: "SET_LOADING", payload: { key: "historicalData", value: true } })
+    try {
+      const boardId = state.selectedBoard?.id ?? state.selectedProject?.boardId
+      if (boardId) {
+        // Get all sprints for this board (we already have them)
+        const allSprints = sprints
+        
+        // Load issues for all closed sprints to create comparison
+        const allSprintIssues: Record<string, any[]> = {}
+        
+        // Load issues for the current sprint
+        const currentIssues = await fetchJiraSprintIssues(Number.parseInt(sprint.id))
+        allSprintIssues[sprint.id] = currentIssues
+        
+        // Load issues for closed sprints (previous sprints)
+        const closedSprints = allSprints.filter(s => s.state === "closed")
+        for (const closedSprint of closedSprints.slice(0, 5)) { // Limit to 5 to avoid too many API calls
+          try {
+            const issues = await fetchJiraSprintIssues(Number.parseInt(closedSprint.id))
+            allSprintIssues[closedSprint.id] = issues
+          } catch (error) {
+            console.warn(`Failed to load issues for sprint ${closedSprint.id}:`, error)
+            allSprintIssues[closedSprint.id] = []
+          }
+        }
+        
+        // Convert sprint to SafeJiraSprint format
+        const safeSprint = {
+          id: sprint.id,
+          name: sprint.name,
+          state: sprint.state,
+          startDate: sprint.startDate || null,
+          endDate: sprint.endDate || null,
+          boardId: sprint.boardId,
+          goal: sprint.goal
+        }
+        
+        // Create sprint comparison using Jira data
+        const comparison = createSprintComparisonFromJira(safeSprint, currentIssues, allSprints, allSprintIssues)
+        if (comparison) {
+          dispatch({ type: "SET_SPRINT_COMPARISON", payload: comparison })
+        }
+        
+        // Generate sprint trends
+        const trends = generateSprintTrendsFromJira(allSprints, allSprintIssues)
+        dispatch({ type: "SET_SPRINT_TRENDS", payload: trends })
+      }
+    } catch (error) {
+      console.error("Failed to create sprint comparison:", error)
+      // Don't show error to user, just log it
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: { key: "historicalData", value: false } })
     }
   }
 

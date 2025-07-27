@@ -14,6 +14,8 @@ import {
   PresentationSlide
 } from './export-service';
 
+import { isIssueCompleted } from './utils'
+
 export class ExecutiveExportRenderer implements ExportRenderer {
   async render(
     presentation: GeneratedPresentation,
@@ -328,7 +330,7 @@ export class ExecutiveExportRenderer implements ExportRenderer {
                     </div>
                     <div class="impact-item">
                         <h3>User Stories Completed</h3>
-                        <p>${businessImpact.userStoriesCompleted} user stories delivered, improving user experience and product functionality.</p>
+                        <p>${businessImpact.completedIssues} user stories delivered, improving user experience and product functionality.</p>
                     </div>
                     <div class="impact-item">
                         <h3>Bug Fixes</h3>
@@ -386,7 +388,7 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     const qualityStatus = qualityScore >= 80 ? 'excellent' : qualityScore >= 60 ? 'good' : qualityScore >= 40 ? 'fair' : 'poor';
 
     // Calculate completion rate
-    const completedIssues = allIssues.filter(issue => issue.status.toLowerCase().includes('done'));
+    const completedIssues = allIssues.filter(issue => isIssueCompleted(issue.status));
     const completionRate = Math.round((completedIssues.length / allIssues.length) * 100);
     const completionStatus = completionRate >= 90 ? 'excellent' : completionRate >= 75 ? 'good' : completionRate >= 60 ? 'fair' : 'poor';
 
@@ -407,7 +409,7 @@ export class ExecutiveExportRenderer implements ExportRenderer {
   }
 
   private analyzeBusinessImpact(allIssues: Issue[]): any {
-    const completedIssues = allIssues.filter(issue => issue.status.toLowerCase().includes('done'));
+    const completedIssues = allIssues.filter(issue => isIssueCompleted(issue.status));
     const highValueIssues = completedIssues.filter(issue => (issue.storyPoints || 0) >= 8);
     const totalStoryPoints = completedIssues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
     const highValuePoints = highValueIssues.reduce((sum, issue) => sum + (issue.storyPoints || 0), 0);
@@ -415,7 +417,7 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     return {
       highValueDeliverables: highValueIssues.length,
       highValuePercentage: totalStoryPoints > 0 ? Math.round((highValuePoints / totalStoryPoints) * 100) : 0,
-      userStoriesCompleted: completedIssues.filter(issue => issue.issueType === 'Story').length,
+      completedIssues: completedIssues.length,
       bugFixes: completedIssues.filter(issue => issue.issueType === 'Bug').length,
       technicalDebt: completedIssues.filter(issue => issue.issueType === 'Technical task').length
     };
@@ -431,7 +433,7 @@ export class ExecutiveExportRenderer implements ExportRenderer {
 
     const velocity = (sprintMetrics.completedTotalPoints / sprintMetrics.estimatedPoints) * 100;
     const qualityScore = this.calculateQualityScore(sprintMetrics.qualityChecklist);
-    const completionRate = (allIssues.filter(issue => issue.status.toLowerCase().includes('done')).length / allIssues.length) * 100;
+    const completionRate = (allIssues.filter(issue => isIssueCompleted(issue.status)).length / allIssues.length) * 100;
 
     if (velocity < 75) {
       recommendations.push('Review sprint planning process to improve estimation accuracy and scope management');

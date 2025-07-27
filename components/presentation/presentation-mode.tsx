@@ -11,7 +11,7 @@ interface PresentationSlide {
   id: string
   title: string
   content: string
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate"
+  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa"
   order: number
   corporateSlideUrl?: string
 }
@@ -585,7 +585,7 @@ export function PresentationMode({
       )}
 
       {/* Slide Content */}
-      <div id="slide-container" className={`flex-1 bg-gray-50 relative overflow-hidden ${!isFullscreen ? 'slide-content-wrapper p-1 sm:p-2' : 'slide-content-wrapper-fullscreen'}`}>
+      <div id="slide-container" className={`flex-1 relative overflow-hidden ${!isFullscreen ? 'bg-gray-50 slide-content-wrapper p-1 sm:p-2' : 'bg-black'}`}>
         <SlideRenderer
           slide={allSlides[currentSlide]}
           allIssues={allIssues}
@@ -594,39 +594,48 @@ export function PresentationMode({
           isFullscreen={isFullscreen}
         />
 
-        {/* Fullscreen controls overlay */}
+        {/* Fullscreen controls overlay - PowerPoint-like subtle controls */}
         {isFullscreen && (
-          <div className="absolute top-4 right-4 flex items-center space-x-2 bg-black/70 rounded-lg p-2">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2 opacity-0 hover:opacity-100 transition-opacity duration-300">
             <Button
               variant="ghost"
               size="sm"
               onClick={prevSlide}
               disabled={currentSlide === 0}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </Button>
+            <div className="text-white text-xs px-2 font-medium">
+              {currentSlide + 1} / {allSlides.length}
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={nextSlide}
               disabled={currentSlide === allSlides.length - 1}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8 p-0"
             >
-              <ChevronRight className="w-5 h-5" />
-            </Button>
-            <div className="text-white text-sm px-2">
-              {currentSlide + 1} of {allSlides.length}
-            </div>
-            <Button variant="ghost" size="sm" onClick={exitFullscreen} className="text-white hover:bg-white/20">
-              <Minimize className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         )}
 
+        {/* Exit fullscreen button - top right corner */}
+        {isFullscreen && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={exitFullscreen} 
+            className="absolute top-4 right-4 text-white hover:bg-white/20 h-8 w-8 p-0 opacity-0 hover:opacity-100 transition-opacity duration-300"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+
         {/* Auto-play indicator */}
         {isPlaying && (
-          <div className="absolute bottom-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm flex items-center space-x-2">
+          <div className={`absolute ${isFullscreen ? 'top-4 left-4' : 'bottom-4 left-4'} bg-blue-600 text-white px-3 py-1 rounded-full text-sm flex items-center space-x-2 ${isFullscreen ? 'opacity-0 hover:opacity-100 transition-opacity duration-300' : ''}`}>
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             <span>Auto-playing</span>
           </div>

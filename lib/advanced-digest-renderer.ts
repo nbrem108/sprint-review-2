@@ -12,6 +12,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChartGenerator, SprintChartData, VelocityChartData } from './chart-generator';
+import { isIssueCompleted } from './utils'
 
 const COLORS = {
   brandBlue: [21, 44, 83],
@@ -582,7 +583,7 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
   ): number {
     // Calculate metrics
     const completedIssues = allIssues.filter(issue => 
-      issue.status.toLowerCase().includes('done')
+      isIssueCompleted(issue.status)
     ).length;
     const completionRate = allIssues.length > 0 ? Math.round((completedIssues / allIssues.length) * 100) : 0;
     const velocityRate = sprintMetrics.estimatedPoints > 0 ? 
@@ -709,7 +710,7 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
 
   private generateTeamPerformanceData(sprintMetrics: SprintMetrics, allIssues: Issue[]): SprintChartData {
     const completedIssues = allIssues.filter(issue => 
-      issue.status.toLowerCase().includes('done')
+      isIssueCompleted(issue.status)
     ).length;
     const completionRate = allIssues.length > 0 ? (completedIssues / allIssues.length) * 100 : 0;
     const velocityRate = sprintMetrics.estimatedPoints > 0 ? 
@@ -1131,7 +1132,7 @@ Strategic initiatives remain on track, with clear business impact metrics and st
   private calculateTeamPerformance(allIssues: Issue[]): string {
     const totalIssues = allIssues.length;
     const completedIssues = allIssues.filter(issue => 
-      issue.status.toLowerCase().includes('done')
+      isIssueCompleted(issue.status)
     ).length;
     const completionRate = totalIssues > 0 ? Math.round((completedIssues / totalIssues) * 100) : 0;
     
