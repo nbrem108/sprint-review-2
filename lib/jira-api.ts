@@ -214,10 +214,10 @@ export async function fetchJiraBoards(projectKey?: string): Promise<any[]> {
       type: String(board.type),
     }))
 
-    console.log(`✅ Found ${safeBoards.length} boards`)
+    console.log(`✅ Found ${safeBoards.length} boards for project ${projectKey}`)
     return freezeInDev(safeBoards)
   } catch (error) {
-    console.error("❌ Failed to fetch boards:", error)
+    console.error(`❌ Failed to fetch boards for project ${projectKey}:`, error)
     if (error instanceof Error) {
       throw new Error(`Failed to fetch JIRA boards: ${error.message}`)
     }
@@ -225,10 +225,47 @@ export async function fetchJiraBoards(projectKey?: string): Promise<any[]> {
   }
 }
 
+// Enhanced board fetching that tries both project key and project ID
+export async function fetchJiraBoardsRobust(projectKey: string, projectId?: string): Promise<any[]> {
+  try {
+    console.log(`🔍 Fetching boards robustly for project ${projectKey} (ID: ${projectId})...`)
+    
+    // First try with project key
+    try {
+      const boardsWithKey = await fetchJiraBoards(projectKey)
+      if (boardsWithKey.length > 0) {
+        console.log(`✅ Found ${boardsWithKey.length} boards using project key`)
+        return boardsWithKey
+      }
+    } catch (error) {
+      console.log(`⚠️ Failed to fetch boards with project key: ${error}`)
+    }
+    
+    // If no boards found with key and we have project ID, try with project ID
+    if (projectId) {
+      try {
+        const boardsWithId = await fetchJiraBoards(projectId)
+        if (boardsWithId.length > 0) {
+          console.log(`✅ Found ${boardsWithId.length} boards using project ID`)
+          return boardsWithId
+        }
+      } catch (error) {
+        console.log(`⚠️ Failed to fetch boards with project ID: ${error}`)
+      }
+    }
+    
+    console.log(`❌ No boards found for project ${projectKey} using either key or ID`)
+    return []
+  } catch (error) {
+    console.error(`❌ Failed to fetch boards robustly for project ${projectKey}:`, error)
+    return []
+  }
+}
+
 export async function boardHasSprints(boardId: number, boardType?: string): Promise<boolean> {
   // Company-managed (scrum / kanban) boards throw 400 on the features endpoint.
   if (boardType && boardType !== "simple") {
-    // Assume scrum boards have sprints; kanban usually doesn’t but we still allow it.
+    // Assume scrum boards have sprints; kanban usually doesn't but we still allow it.
     return boardType === "scrum" || boardType === "kanban"
   }
 
@@ -258,10 +295,15 @@ export async function fetchJiraBoardsForProjects(projectKeys: string[]): Promise
 
       // Filter boards that have Sprints enabled
       const usableBoards = await executeParallelRequests(
-        boards.map((b: any) => async () => ((await boardHasSprints(b.id, b.type)) ? b : null))
+        boards.map((b: any) => async () => {
+          const hasSprints = await boardHasSprints(b.id, b.type)
+          return hasSprints ? b : null
+        })
       )
 
-      return { projectKey, boards: usableBoards.filter(Boolean) }
+      const filteredBoards = usableBoards.filter(Boolean)
+      
+      return { projectKey, boards: filteredBoards }
     })
 
     const results = await executeParallelRequests(boardRequests)

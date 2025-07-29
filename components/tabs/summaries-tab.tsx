@@ -10,6 +10,7 @@ import { Sparkles, Loader2, RefreshCw, Copy, AlertCircle, FileText, Target, Cale
 import { useSprintContext } from "@/components/sprint-context"
 import { useToast } from "@/hooks/use-toast"
 import { ImageUpload } from "@/components/ui/image-upload"
+import ReactMarkdown from "react-markdown"
 
 interface GenerationStatus {
   currentSprint: "idle" | "generating" | "complete" | "error"
@@ -714,8 +715,8 @@ export function SummariesTab() {
             </div>
           ) : state.summaries.currentSprint ? (
             <div className="prose prose-sm max-w-none">
-              <div className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg border">
-                {state.summaries.currentSprint}
+              <div className="text-sm bg-muted p-4 rounded-lg border">
+                <ReactMarkdown>{state.summaries.currentSprint}</ReactMarkdown>
               </div>
             </div>
           ) : (
@@ -801,8 +802,8 @@ export function SummariesTab() {
               </div>
             ) : state.summaries.upcomingSprint ? (
               <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg border">
-                  {state.summaries.upcomingSprint}
+                <div className="text-sm bg-muted p-4 rounded-lg border">
+                  <ReactMarkdown>{state.summaries.upcomingSprint}</ReactMarkdown>
                 </div>
               </div>
             ) : (
@@ -933,8 +934,8 @@ export function SummariesTab() {
                       ) : (
                         <div className="space-y-4">
                           <div className="prose prose-sm max-w-none">
-                            <div className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg border font-medium">
-                              {summary}
+                            <div className="text-sm bg-muted p-4 rounded-lg border font-medium">
+                              <ReactMarkdown>{summary}</ReactMarkdown>
                             </div>
                           </div>
                           

@@ -697,13 +697,69 @@ export class HTMLExportRenderer implements ExportRenderer {
   }
 
   private markdownToHTML(markdown: string): string {
-    // Simple markdown to HTML conversion
-    return markdown
+    // Enhanced markdown to HTML conversion
+    let html = markdown
+      // Headings
+      .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+      .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+      .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+      .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+      
+      // Bold and italic
+      .replace(/\*\*(.*?)\*\*/gm, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gm, '<em>$1</em>')
+      
+      // Code
+      .replace(/`(.*?)`/gm, '<code>$1</code>')
+      
+      // Blockquotes
+      .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>')
+      
+      // Lists - handle both ordered and unordered
+      .replace(/^- (.*)$/gm, '<li>$1</li>')
+      .replace(/^\d+\. (.*)$/gm, '<li>$1</li>');
+
+    // Wrap list items in ul/ol tags
+    const lines = html.split('\n');
+    let inList = false;
+    let listType = 'ul';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('<li>')) {
+        if (!inList) {
+          // Check if it's an ordered list
+          const originalLine = markdown.split('\n')[i];
+          listType = /^\d+\./.test(originalLine) ? 'ol' : 'ul';
+          lines[i] = `<${listType}>\n${line}`;
+          inList = true;
+        }
+      } else if (inList && !line.startsWith('<li>')) {
+        lines[i-1] = lines[i-1] + `\n</${listType}>`;
+        inList = false;
+      }
+    }
+    
+    // Close any open list
+    if (inList) {
+      lines[lines.length - 1] = lines[lines.length - 1] + `\n</${listType}>`;
+    }
+    
+    html = lines.join('\n');
+    
+    // Handle paragraphs
+    html = html
       .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^(.+)$/gm, '<p>$1</p>');
+      .replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<ul') && !html.startsWith('<ol') && !html.startsWith('<blockquote')) {
+      html = `<p>${html}</p>`;
+    }
+
+    return html;
   }
 
   private updateProgress(

@@ -189,6 +189,48 @@ export function SetupTab() {
     })
   }
 
+  const debugPTQProject = async () => {
+    setIsAnalyzing(true)
+    try {
+      const response = await fetch('/api/jira-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          operation: 'debug-ptq'
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('🔍 PTQ Project Debug:', data)
+      
+      if (data.error) {
+        toast({
+          title: "PTQ Project Debug",
+          description: data.error,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "PTQ Project Debug Complete",
+          description: `Found ${data.summary.totalBoards} boards, ${data.summary.boardsWithSprints} with sprints. Check console for details.`,
+        })
+      }
+    } catch (error) {
+      console.error('PTQ project debug error:', error)
+      toast({
+        title: "Debug Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
 
   return (
     <div className="space-y-6 max-w-none">
@@ -247,6 +289,16 @@ export function SetupTab() {
           >
             {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
             Debug Fields
+          </Button>
+          <Button 
+            onClick={debugPTQProject} 
+            disabled={isAnalyzing}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            Debug PTQ
           </Button>
         </div>
       </div>

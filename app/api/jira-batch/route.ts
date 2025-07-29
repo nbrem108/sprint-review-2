@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { 
   fetchJiraProjects, 
   fetchJiraBoardsForProjects, 
+  fetchJiraBoards,
+  fetchJiraBoardsRobust,
+  boardHasSprints,
   fetchJiraSprints, 
   fetchJiraSprintIssues,
   clearJiraCache,
@@ -27,6 +30,8 @@ export async function POST(request: NextRequest) {
         return await handleClearCache(params)
       case "get-cache-stats":
         return await handleGetCacheStats()
+      case "debug-ptq":
+        return await handleDebugPTQ()
       default:
         return NextResponse.json({ error: "Invalid operation" }, { status: 400 })
     }
@@ -50,9 +55,17 @@ async function handleFetchProjectsWithBoards() {
       return NextResponse.json({ projects: [] })
     }
 
-    // Fetch boards for all projects in parallel
-    const projectKeys = projects.map(p => p.key)
-    const boardsByProject = await fetchJiraBoardsForProjects(projectKeys)
+    // Fetch boards for all projects using robust approach
+    const boardPromises = projects.map(async (project) => {
+      const boards = await fetchJiraBoardsRobust(project.key, project.id)
+      return { projectKey: project.key, boards }
+    })
+    
+    const boardResults = await Promise.all(boardPromises)
+    const boardsByProject: Record<string, any[]> = {}
+    boardResults.forEach(({ projectKey, boards }) => {
+      boardsByProject[projectKey] = boards
+    })
 
     // Combine projects with their boards
     const projectsWithBoards = projects.map((project) => {
@@ -124,4 +137,69 @@ async function handleClearCache(params?: { pattern?: string }) {
 async function handleGetCacheStats() {
   const stats = await getCacheStats()
   return NextResponse.json(stats)
+}
+
+async function handleDebugPTQ() {
+  try {
+    console.log("🔍 Debug operation: Testing PTQ project...")
+    
+    // Test 1: Check if PTQ project exists
+    const projects = await fetchJiraProjects()
+    const ptqProject = projects.find(p => p.key === 'PTQ')
+    
+    if (!ptqProject) {
+      return NextResponse.json({ 
+        error: "PTQ project not found",
+        availableProjects: projects.map(p => ({ key: p.key, name: p.name }))
+      })
+    }
+    
+    console.log("🔍 PTQ project found:", ptqProject)
+    
+    // Test 2: Check boards for PTQ using project key
+    console.log("🔍 Testing boards with project key 'PTQ'...")
+    const boardsWithKey = await fetchJiraBoards('PTQ')
+    
+    // Test 3: Check boards for PTQ using project ID
+    console.log("🔍 Testing boards with project ID '10005'...")
+    const boardsWithId = await fetchJiraBoards('10005')
+    
+    // Test 4: Check boards using robust approach
+    console.log("🔍 Testing boards with robust approach...")
+    const boardsRobust = await fetchJiraBoardsRobust('PTQ', '10005')
+    
+    // Test 5: Check if boards have sprints (using the approach that found boards)
+    const boardsToTest = boardsRobust.length > 0 ? boardsRobust : (boardsWithKey.length > 0 ? boardsWithKey : boardsWithId)
+    const boardsWithSprints = await Promise.all(
+      boardsToTest.map(async (board: any) => {
+        const hasSprints = await boardHasSprints(board.id, board.type)
+        return {
+          ...board,
+          hasSprints
+        }
+      })
+    )
+    
+    return NextResponse.json({
+      ptqProject,
+      boardsWithKey,
+      boardsWithId,
+      boardsRobust,
+      boardsWithSprints,
+      summary: {
+        projectFound: true,
+        boardsFoundWithKey: boardsWithKey.length,
+        boardsFoundWithId: boardsWithId.length,
+        boardsFoundWithRobust: boardsRobust.length,
+        boardsWithSprints: boardsWithSprints.filter((b: any) => b.hasSprints).length,
+        recommendedApproach: boardsRobust.length > 0 ? 'robust' : (boardsWithId.length > boardsWithKey.length ? 'projectId' : 'projectKey')
+      }
+    })
+  } catch (error) {
+    console.error("Failed to debug PTQ:", error)
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 })
+  }
 }

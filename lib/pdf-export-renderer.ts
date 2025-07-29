@@ -222,30 +222,11 @@ export class PDFExportRenderer implements ExportRenderer {
   private async renderSummarySlide(doc: jsPDF, slide: PresentationSlide, pageWidth: number, pageHeight: number): Promise<void> {
     const content = typeof slide.content === 'string' ? slide.content : JSON.stringify(slide.content);
     
-    // Split content into lines that fit the page
-    const maxWidth = pageWidth - 40;
-    const lines = doc.splitTextToSize(content, maxWidth);
-    
-    // Calculate starting position
-    const lineHeight = 8;
+    // Use markdown rendering for better formatting
     const startY = 80;
-    const maxLines = Math.floor((pageHeight - startY - 40) / lineHeight);
+    const maxWidth = pageWidth - 40;
     
-    // Render content
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(55, 65, 81);
-    
-    for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
-      doc.text(lines[i], 20, startY + (i * lineHeight));
-    }
-    
-    // Add note if content was truncated
-    if (lines.length > maxLines) {
-      doc.setFontSize(10);
-      doc.setTextColor(156, 163, 175);
-      doc.text(`... (content truncated, ${lines.length - maxLines} more lines)`, 20, pageHeight - 30);
-    }
+    this.renderMarkdownContent(doc, content, startY, 20, maxWidth, pageHeight);
   }
 
   private async renderMetricsSlide(
@@ -726,6 +707,182 @@ export class PDFExportRenderer implements ExportRenderer {
     const timestamp = new Date().toISOString().split('T')[0];
     const sprintName = presentation.metadata.sprintName.replace(/[^a-zA-Z0-9]/g, '_');
     return `Sprint_Review_${sprintName}_${timestamp}.pdf`;
+  }
+
+  private renderMarkdownContent(
+    doc: jsPDF,
+    markdownContent: string,
+    startY: number,
+    margin: number,
+    contentWidth: number,
+    pageHeight: number
+  ): void {
+    const lines = markdownContent.split('\n');
+    let currentY = startY;
+    const lineHeight = 8;
+    const headingHeight = 12;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Check if we need a page break
+      if (currentY > pageHeight - 50) {
+        doc.addPage();
+        currentY = 40;
+      }
+      
+      // Handle different markdown elements
+      if (line.startsWith('#### ')) {
+        // Level 4 heading
+        const headingText = line.substring(5);
+        doc.setTextColor(21, 44, 83); // Brand blue
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * headingHeight) + 8;
+        
+      } else if (line.startsWith('### ')) {
+        // Level 3 heading
+        const headingText = line.substring(4);
+        doc.setTextColor(21, 44, 83); // Brand blue
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * headingHeight) + 8;
+        
+      } else if (line.startsWith('## ')) {
+        // Level 2 heading
+        const headingText = line.substring(3);
+        doc.setTextColor(21, 44, 83); // Brand blue
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * headingHeight) + 8;
+        
+      } else if (line.startsWith('# ')) {
+        // Level 1 heading
+        const headingText = line.substring(2);
+        doc.setTextColor(21, 44, 83); // Brand blue
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * headingHeight) + 8;
+        
+      } else if (line.startsWith('- ')) {
+        // List item - check for bold text within
+        const listText = line.substring(2);
+        
+        if (listText.includes('**')) {
+          // Handle bold text within list items
+          const parts = listText.split('**');
+          let currentX = margin;
+          
+          doc.setFontSize(12);
+          doc.setTextColor(55, 65, 81);
+          
+          for (let j = 0; j < parts.length; j++) {
+            const part = parts[j];
+            if (part.length === 0) continue;
+            
+            if (j % 2 === 0) {
+              // Regular text
+              doc.setFont('helvetica', 'normal');
+            } else {
+              // Bold text
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(221, 79, 38); // Brand orange
+            }
+            
+            const prefix = j === 0 ? '• ' : '';
+            const textLines = doc.splitTextToSize(prefix + part, contentWidth - (currentX - margin));
+            doc.text(textLines, currentX, currentY);
+            
+            if (textLines.length > 1) {
+              currentY += (textLines.length - 1) * lineHeight;
+            }
+            
+            currentX += doc.getTextWidth(prefix + part);
+          }
+          currentY += lineHeight + 4;
+        } else {
+          // Regular list item without bold text
+          doc.setTextColor(55, 65, 81);
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          
+          const listLines = doc.splitTextToSize(`• ${listText}`, contentWidth);
+          doc.text(listLines, margin, currentY);
+          currentY += (listLines.length * lineHeight) + 4;
+        }
+        
+      } else if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
+        // Bold text (standalone)
+        const boldText = line.substring(2, line.length - 2);
+        doc.setTextColor(221, 79, 38); // Brand orange
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        
+        const boldLines = doc.splitTextToSize(boldText, contentWidth);
+        doc.text(boldLines, margin, currentY);
+        currentY += (boldLines.length * lineHeight) + 4;
+        
+      } else if (line.length > 0) {
+        // Regular paragraph text - check for inline bold text
+        if (line.includes('**')) {
+          // Handle inline bold text
+          const parts = line.split('**');
+          let currentX = margin;
+          
+          doc.setFontSize(12);
+          doc.setTextColor(55, 65, 81);
+          
+          for (let j = 0; j < parts.length; j++) {
+            const part = parts[j];
+            if (part.length === 0) continue;
+            
+            if (j % 2 === 0) {
+              // Regular text
+              doc.setFont('helvetica', 'normal');
+            } else {
+              // Bold text
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(221, 79, 38); // Brand orange
+            }
+            
+            const textLines = doc.splitTextToSize(part, contentWidth - (currentX - margin));
+            doc.text(textLines, currentX, currentY);
+            
+            if (textLines.length > 1) {
+              currentY += (textLines.length - 1) * lineHeight;
+            }
+            
+            currentX += doc.getTextWidth(part);
+          }
+          currentY += lineHeight + 4;
+        } else {
+          // Regular paragraph text without formatting
+          doc.setTextColor(55, 65, 81);
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          
+          const textLines = doc.splitTextToSize(line, contentWidth);
+          doc.text(textLines, margin, currentY);
+          currentY += (textLines.length * lineHeight) + 4;
+        }
+        
+      } else {
+        // Empty line - add spacing
+        currentY += lineHeight;
+      }
+    }
   }
 
   private updateProgress(

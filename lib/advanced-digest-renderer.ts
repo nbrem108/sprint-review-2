@@ -636,7 +636,18 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
       }
       
       // Handle different markdown elements
-      if (line.startsWith('### ')) {
+      if (line.startsWith('#### ')) {
+        // Level 4 heading
+        const headingText = line.substring(5);
+        doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
+        doc.setFontSize(FONT_SIZES.sectionHeader);
+        doc.setFont('helvetica', 'bold');
+        
+        const headingLines = doc.splitTextToSize(headingText, contentWidth);
+        doc.text(headingLines, margin, currentY);
+        currentY += (headingLines.length * 6) + 8;
+        
+      } else if (line.startsWith('### ')) {
         // Level 3 heading
         const headingText = line.substring(4);
         doc.setTextColor(COLORS.brandBlue[0], COLORS.brandBlue[1], COLORS.brandBlue[2]);
@@ -671,18 +682,54 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
         currentY += (regularLines.length * 5) + 8;
         
       } else if (line.startsWith('- ')) {
-        // Regular list item
+        // Regular list item - check for bold text within
         const listText = line.substring(2);
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(FONT_SIZES.body);
-        doc.setFont('helvetica', 'normal');
         
-        const listLines = doc.splitTextToSize(`• ${listText}`, contentWidth);
-        doc.text(listLines, margin, currentY);
-        currentY += (listLines.length * 5) + 4;
+        if (listText.includes('**')) {
+          // Handle bold text within list items
+          const parts = listText.split('**');
+          let currentX = margin;
+          
+          for (let j = 0; j < parts.length; j++) {
+            const part = parts[j];
+            if (part.length === 0) continue;
+            
+            if (j % 2 === 0) {
+              // Regular text
+              doc.setTextColor(0, 0, 0);
+              doc.setFontSize(FONT_SIZES.body);
+              doc.setFont('helvetica', 'normal');
+            } else {
+              // Bold text
+              doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
+              doc.setFontSize(FONT_SIZES.body);
+              doc.setFont('helvetica', 'bold');
+            }
+            
+            const prefix = j === 0 ? '• ' : '';
+            const textLines = doc.splitTextToSize(prefix + part, contentWidth - (currentX - margin));
+            doc.text(textLines, currentX, currentY);
+            
+            if (textLines.length > 1) {
+              currentY += (textLines.length - 1) * 5;
+            }
+            
+            currentX += doc.getTextWidth(prefix + part);
+          }
+          currentY += 8;
+        } else {
+          // Regular list item without bold text
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(FONT_SIZES.body);
+          doc.setFont('helvetica', 'normal');
+          
+          const listLines = doc.splitTextToSize(`• ${listText}`, contentWidth);
+          doc.text(listLines, margin, currentY);
+          currentY += (listLines.length * 5) + 4;
+        }
         
-      } else if (line.startsWith('**') && line.endsWith('**')) {
-        // Bold text
+      } else if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
+        // Bold text (standalone)
         const boldText = line.substring(2, line.length - 2);
         doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
         doc.setFontSize(FONT_SIZES.body);
@@ -693,14 +740,48 @@ export class AdvancedDigestExportRenderer implements ExportRenderer {
         currentY += (boldLines.length * 5) + 4;
         
       } else if (line.length > 0) {
-        // Regular paragraph text
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(FONT_SIZES.body);
-        doc.setFont('helvetica', 'normal');
-        
-        const textLines = doc.splitTextToSize(line, contentWidth);
-        doc.text(textLines, margin, currentY);
-        currentY += (textLines.length * 5) + 4;
+        // Regular paragraph text - check for inline bold text
+        if (line.includes('**')) {
+          // Handle inline bold text
+          const parts = line.split('**');
+          let currentX = margin;
+          
+          for (let j = 0; j < parts.length; j++) {
+            const part = parts[j];
+            if (part.length === 0) continue;
+            
+            if (j % 2 === 0) {
+              // Regular text
+              doc.setTextColor(0, 0, 0);
+              doc.setFontSize(FONT_SIZES.body);
+              doc.setFont('helvetica', 'normal');
+            } else {
+              // Bold text
+              doc.setTextColor(COLORS.brandOrange[0], COLORS.brandOrange[1], COLORS.brandOrange[2]);
+              doc.setFontSize(FONT_SIZES.body);
+              doc.setFont('helvetica', 'bold');
+            }
+            
+            const textLines = doc.splitTextToSize(part, contentWidth - (currentX - margin));
+            doc.text(textLines, currentX, currentY);
+            
+            if (textLines.length > 1) {
+              currentY += (textLines.length - 1) * 5;
+            }
+            
+            currentX += doc.getTextWidth(part);
+          }
+          currentY += 4;
+        } else {
+          // Regular paragraph text without formatting
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(FONT_SIZES.body);
+          doc.setFont('helvetica', 'normal');
+          
+          const textLines = doc.splitTextToSize(line, contentWidth);
+          doc.text(textLines, margin, currentY);
+          currentY += (textLines.length * 5) + 4;
+        }
         
       } else {
         // Empty line - add spacing

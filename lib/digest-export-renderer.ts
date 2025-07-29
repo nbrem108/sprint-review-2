@@ -672,17 +672,59 @@ export class DigestExportRenderer implements ExportRenderer {
   }
 
   private cleanMarkdownContent(content: string): string {
-    return content
-      .replace(/#{1,6}\s+/g, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-      .replace(/`(.*?)`/g, '$1')
-      .replace(/[-*+] /g, '')
-      .replace(/^\d+\.\s+/gm, '')
-      .replace(/_/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    // Instead of stripping markdown, we'll render it properly
+    // This function is used for PDF rendering, so we need to handle it line by line
+    const lines = content.split('\n');
+    let renderedContent = '';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.startsWith('#### ')) {
+        // Level 4 heading
+        const headingText = trimmedLine.substring(5);
+        renderedContent += `${headingText}\n\n`;
+      } else if (trimmedLine.startsWith('### ')) {
+        // Level 3 heading
+        const headingText = trimmedLine.substring(4);
+        renderedContent += `${headingText}\n\n`;
+      } else if (trimmedLine.startsWith('## ')) {
+        // Level 2 heading
+        const headingText = trimmedLine.substring(3);
+        renderedContent += `${headingText}\n\n`;
+      } else if (trimmedLine.startsWith('# ')) {
+        // Level 1 heading
+        const headingText = trimmedLine.substring(2);
+        renderedContent += `${headingText}\n\n`;
+      } else if (trimmedLine.startsWith('- ')) {
+        // List item - handle bold text within
+        const listText = trimmedLine.substring(2);
+        if (listText.includes('**')) {
+          // Remove markdown but keep the text readable
+          const cleanText = listText.replace(/\*\*(.*?)\*\*/g, '$1');
+          renderedContent += `• ${cleanText}\n`;
+        } else {
+          renderedContent += `• ${listText}\n`;
+        }
+      } else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**') && trimmedLine.length > 4) {
+        // Bold text (standalone)
+        const boldText = trimmedLine.substring(2, trimmedLine.length - 2);
+        renderedContent += `${boldText}\n\n`;
+      } else if (trimmedLine.length > 0) {
+        // Regular paragraph text - handle inline bold text
+        if (trimmedLine.includes('**')) {
+          const cleanText = trimmedLine.replace(/\*\*(.*?)\*\*/g, '$1');
+          renderedContent += `${cleanText}\n`;
+        } else {
+          renderedContent += `${trimmedLine}\n`;
+        }
+      } else {
+        // Empty line
+        renderedContent += '\n';
+      }
+    }
+    
+    return renderedContent.trim();
   }
 
   private getStatusText(ratio: number): string {
