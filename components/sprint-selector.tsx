@@ -198,6 +198,7 @@ export function SprintSelector() {
   }
 
   const futureSprints = sprints.filter((s) => s.state === "future")
+  const upcomingSprints = sprints.filter((s) => s.state === "future" || s.state === "active")
 
   return (
     <div className="space-y-4">
@@ -262,7 +263,7 @@ export function SprintSelector() {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Upcoming Sprint (Optional)</label>
+        <label className="text-sm font-medium">Upcoming/Active Sprint (Optional)</label>
         <Popover open={upcomingOpen} onOpenChange={setUpcomingOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -278,7 +279,7 @@ export function SprintSelector() {
                   {getSprintStatusBadge(state.upcomingSprint.state)}
                 </div>
               ) : (
-                "Select upcoming sprint..."
+                "Select upcoming/active sprint..."
               )}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -287,13 +288,13 @@ export function SprintSelector() {
             <Command>
               <CommandInput placeholder="Search sprints..." />
               <CommandList>
-                <CommandEmpty>No future sprints found.</CommandEmpty>
+                <CommandEmpty>No upcoming sprints found.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem value="none" onSelect={() => handleUpcomingSprintSelect(null)}>
                     <Check className={cn("mr-2 h-4 w-4", !state.upcomingSprint ? "opacity-100" : "opacity-0")} />
                     None
                   </CommandItem>
-                  {futureSprints.map((sprint) => (
+                  {upcomingSprints.map((sprint) => (
                     <CommandItem
                       key={sprint.id}
                       value={sprint.name}
@@ -327,7 +328,8 @@ export function SprintSelector() {
         <p className="text-xs text-muted-foreground">
           Found {sprints.length} sprint{sprints.length !== 1 ? "s" : ""} • Active:{" "}
           {sprints.filter((s) => s.state === "active").length} • Future:{" "}
-          {sprints.filter((s) => s.state === "future").length} • Closed:{" "}
+          {sprints.filter((s) => s.state === "future").length} • Upcoming:{" "}
+          {upcomingSprints.length} • Closed:{" "}
           {sprints.filter((s) => s.state === "closed").length}
         </p>
       )}
