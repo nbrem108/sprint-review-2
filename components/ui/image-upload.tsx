@@ -38,10 +38,11 @@ export function ImageUpload({
       const img = new Image()
 
       img.onload = () => {
-        // Calculate new dimensions (max 800px width/height for export quality)
-        const maxDimension = 800
+        // Calculate new dimensions (increased to 2560px for ultra high quality)
+        const maxDimension = 2560
         let { width, height } = img
 
+        // Only resize if image is larger than max dimension
         if (width > height) {
           if (width > maxDimension) {
             height = (height * maxDimension) / width
@@ -57,8 +58,19 @@ export function ImageUpload({
         canvas.width = width
         canvas.height = height
 
-        // Draw and compress
+        // Enable image smoothing for better quality
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
+        }
+
+        // Draw and compress with higher quality
         ctx?.drawImage(img, 0, 0, width, height)
+        
+        // Use PNG for better quality or JPEG with higher quality setting
+        const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+        const quality = format === 'image/png' ? 1.0 : 0.98 // 98% quality for JPEG, lossless for PNG
+        
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -70,8 +82,8 @@ export function ImageUpload({
               reject(new Error("Failed to compress image"))
             }
           },
-          "image/jpeg",
-          0.8 // 80% quality
+          format,
+          quality
         )
       }
 

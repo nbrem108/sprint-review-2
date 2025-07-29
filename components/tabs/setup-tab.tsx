@@ -11,6 +11,8 @@ import { BoardSelector } from "@/components/board-selector"
 import { SprintSelector } from "@/components/sprint-selector"
 import { IssuesTable } from "@/components/issues-table"
 import { ReleaseNotesSection } from "@/components/release-notes/release-notes-section"
+import { AppOverviewModal } from "@/components/app-overview-modal"
+import { HowToGetStartedModal } from "@/components/how-to-get-started-modal"
 import { 
   Settings, 
   Database, 
@@ -19,7 +21,9 @@ import {
   CheckCircle, 
   AlertCircle, 
   Loader2,
-  Bug
+  Bug,
+  Lightbulb,
+  BookOpen
 } from "lucide-react"
 import { SessionManager } from "@/components/session-manager"
 import { PerformanceMonitor } from "@/components/performance-monitor"
@@ -194,6 +198,26 @@ export function SetupTab() {
           <p className="text-muted-foreground">Configure your JIRA connection and select sprint data</p>
         </div>
         <div className="flex gap-2">
+          <AppOverviewModal>
+            <Button 
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Lightbulb className="h-4 w-4" />
+              What This App Solves
+            </Button>
+          </AppOverviewModal>
+          <HowToGetStartedModal>
+            <Button 
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              How to Get Started
+            </Button>
+          </HowToGetStartedModal>
           <Button 
             onClick={testReleaseNotesField} 
             disabled={isAnalyzing || !state.selectedSprint}

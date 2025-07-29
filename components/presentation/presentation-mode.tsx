@@ -11,7 +11,7 @@ interface PresentationSlide {
   id: string
   title: string
   content: string
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa" | "executive" | "quarterly-plan"
+  type: "title" | "summary" | "demo-story" | "custom" | "corporate" | "qa" | "executive" | "quarterly-plan"
   order: number
   corporateSlideUrl?: string
 }

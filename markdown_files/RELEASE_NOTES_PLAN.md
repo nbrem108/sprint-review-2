@@ -171,7 +171,7 @@ docs/
 │ • Better Performance                │
 │ • Enhanced User Interface           │
 │                                     │
-│ 📅 Released: December 2024          │
+│ 📅 Released: July 2025          │
 │                                     │
 │ [Close] [View Full Changelog]       │
 └─────────────────────────────────────┘

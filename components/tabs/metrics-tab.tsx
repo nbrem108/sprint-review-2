@@ -584,12 +584,25 @@ export function MetricsTab() {
               </div>
               <Input
                 id="testCoverage"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
+                type="text"
+                inputMode="decimal"
                 value={formData.testCoveragePercent}
-                onChange={(e) => handleInputChange("testCoveragePercent", Number.parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string, numbers, and decimals
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    handleInputChange("testCoveragePercent", value);
+                  }
+                }}
+                onBlur={(e) => {
+                  // Convert to number on blur, ensuring it's a valid decimal
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value >= 0 && value <= 100) {
+                    handleInputChange("testCoveragePercent", value.toFixed(2));
+                  } else {
+                    handleInputChange("testCoveragePercent", "0");
+                  }
+                }}
                 placeholder="e.g., 94.93"
               />
             </div>
@@ -730,11 +743,25 @@ export function MetricsTab() {
               </div>
               <Input
                 id="averageCycleTime"
-                type="number"
-                step="0.1"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 value={formData.averageCycleTime}
-                onChange={(e) => handleInputChange("averageCycleTime", Number.parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string, numbers, and decimals
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    handleInputChange("averageCycleTime", value);
+                  }
+                }}
+                onBlur={(e) => {
+                  // Convert to number on blur, ensuring it's a valid decimal
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value >= 0) {
+                    handleInputChange("averageCycleTime", value.toFixed(1));
+                  } else {
+                    handleInputChange("averageCycleTime", "0");
+                  }
+                }}
                 placeholder="e.g., 3.5"
               />
             </div>

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exportService } from '@/lib/export-service';
+import { ExecutiveExportRenderer } from '@/lib/executive-export-renderer';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { presentation, allIssues, upcomingIssues, sprintMetrics, options = {} } = body;
+    const { 
+      presentation, 
+      allIssues, 
+      upcomingIssues, 
+      sprintMetrics, 
+      options = {},
+      additionalData = {}
+    } = body;
 
     if (!presentation) {
       return NextResponse.json(
@@ -15,13 +22,18 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Starting executive export...');
 
-    // Generate executive export
-    const result = await exportService.export(
+    // Create executive renderer directly (server-side only)
+    const executiveRenderer = new ExecutiveExportRenderer();
+
+    // Generate executive export directly without going through the export service
+    const result = await executiveRenderer.render(
       presentation,
       allIssues || [],
       upcomingIssues || [],
       sprintMetrics,
-      { ...options, format: 'executive' }
+      { ...options, format: 'executive' },
+      undefined, // onProgress callback
+      additionalData // additional context data including summaries
     );
 
     console.log(`✅ Executive export completed: ${result.fileName} (${result.fileSize} bytes)`);

@@ -1,6 +1,6 @@
-# Sprint Review Generator v1.0.0
+# Sprint Review Generator v1.0.1
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/your-org/sprint-review-generator)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/your-org/sprint-review-generator)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
@@ -262,7 +262,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎊 Release Celebration
 
-This v1.0.0 release represents a significant milestone in the Sprint Review Generator project. From initial concept to production-ready application, this tool has been designed to transform how agile teams communicate their progress and achievements.
+This v1.0.1 release builds upon the solid foundation of v1.0.0 with significant performance improvements and stability enhancements. From initial concept to production-ready application, this tool has been designed to transform how agile teams communicate their progress and achievements.
 
 **Thank you to all users, contributors, and stakeholders who have supported this project from the beginning. Your feedback, testing, and enthusiasm have been invaluable in creating a tool that truly serves the agile community.**
 

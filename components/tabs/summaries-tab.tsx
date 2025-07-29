@@ -67,7 +67,7 @@ export function SummariesTab() {
       setGenerationStatus((prev) => ({ ...prev, currentSprint: "complete" }))
       toast({
         title: "AI Summary Generated",
-        description: "Current sprint summary has been generated using GPT-4o.",
+        description: "Current sprint summary has been generated using AI.",
       })
     } catch (error) {
       console.error("Generation error:", error)
@@ -113,7 +113,7 @@ export function SummariesTab() {
       setGenerationStatus((prev) => ({ ...prev, upcomingSprint: "complete" }))
       toast({
         title: "AI Summary Generated",
-        description: "Upcoming sprint summary has been generated using GPT-4o.",
+        description: "Upcoming sprint summary has been generated using AI.",
       })
     } catch (error) {
       console.error("Generation error:", error)
@@ -158,7 +158,7 @@ export function SummariesTab() {
       setGenerationStatus((prev) => ({ ...prev, demoStories: "complete" }))
       toast({
         title: "AI Summaries Generated",
-        description: `${Object.keys(data.summaries).length} demo story summaries have been generated using GPT-4o.`,
+        description: `${Object.keys(data.summaries).length} demo story summaries have been generated using AI.`,
       })
     } catch (error) {
       console.error("Generation error:", error)
@@ -435,7 +435,7 @@ export function SummariesTab() {
             AI Summaries
             <Badge variant="secondary" className="gap-1">
               <Zap className="h-3 w-3" />
-              GPT-4o
+              AI
             </Badge>
           </h2>
           <p className="text-muted-foreground">
@@ -473,7 +473,7 @@ export function SummariesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-900">
             <Zap className="h-5 w-5" />
-            Powered by GPT-4o
+            Powered by AI
           </CardTitle>
           <CardDescription className="text-blue-700">
             Advanced AI generates contextual, professional summaries using your sprint data, metrics, and demo
@@ -512,7 +512,7 @@ export function SummariesTab() {
                 <div className="font-medium">Current Sprint</div>
                 <div className="text-sm text-muted-foreground">
                   {generationStatus.currentSprint === "complete"
-                    ? "Generated with GPT-4o"
+                    ? "Generated with AI"
                     : generationStatus.currentSprint === "generating"
                       ? "Generating with AI..."
                       : generationStatus.currentSprint === "error"
@@ -548,7 +548,7 @@ export function SummariesTab() {
                   <div className="font-medium">Upcoming Sprint</div>
                   <div className="text-sm text-muted-foreground">
                     {generationStatus.upcomingSprint === "complete"
-                      ? "Generated with GPT-4o"
+                      ? "Generated with AI"
                       : generationStatus.upcomingSprint === "generating"
                         ? "Generating with AI..."
                         : generationStatus.upcomingSprint === "error"
@@ -585,7 +585,7 @@ export function SummariesTab() {
                   <div className="font-medium">Demo Stories</div>
                   <div className="text-sm text-muted-foreground">
                     {generationStatus.demoStories === "complete"
-                      ? `${state.demoStories.length} generated with GPT-4o`
+                      ? `${state.demoStories.length} generated with AI`
                       : generationStatus.demoStories === "generating"
                         ? "Generating with AI..."
                         : generationStatus.demoStories === "error"
@@ -723,7 +723,7 @@ export function SummariesTab() {
               {generationStatus.currentSprint === "generating" ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Generating current sprint summary with GPT-4o...
+                  Generating current sprint summary with AI...
                 </div>
               ) : (
                 "Click the refresh button to generate an AI-powered summary"
@@ -810,7 +810,7 @@ export function SummariesTab() {
                 {generationStatus.upcomingSprint === "generating" ? (
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Generating upcoming sprint summary with GPT-4o...
+                    Generating upcoming sprint summary with AI...
                   </div>
                 ) : (
                   "Click the refresh button to generate an AI-powered summary"
@@ -874,7 +874,7 @@ export function SummariesTab() {
               <div className="text-center py-8">
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Generating demo story summaries with GPT-4o...
+                  Generating demo story summaries with AI...
                 </div>
               </div>
             ) : state.summaries.demoStories ? (
@@ -1009,7 +1009,7 @@ export function SummariesTab() {
             <div>
               <h4 className="font-medium mb-2">AI Features:</h4>
               <ul className="space-y-1 text-muted-foreground">
-                <li>• GPT-4o analyzes your actual sprint data</li>
+                <li>• AI analyzes your actual sprint data</li>
                 <li>• Professional, stakeholder-ready content</li>
                 <li>• Business-focused insights and metrics</li>
                 <li>• Edit and customize AI-generated content</li>

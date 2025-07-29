@@ -52,7 +52,7 @@ interface PresentationSlide {
   id: string
   title: string
   content: string
-  type: "title" | "summary" | "metrics" | "demo-story" | "custom" | "corporate" | "qa" | "executive" | "quarterly-plan"
+  type: "title" | "summary" | "demo-story" | "custom" | "corporate" | "qa" | "executive" | "quarterly-plan" | "metrics"
   order: number
   corporateSlideUrl?: string
   storyId?: string // Add the specific story ID for demo story slides
@@ -227,39 +227,7 @@ export function PresentationTab() {
 
 
 
-      // Sprint Metrics slide
-      if (hasMetrics && state.metrics) {
-        const epicBreakdown: EpicBreakdown[] = getEpicBreakdown(state.issues);
-        const epicBreakdownContent = epicBreakdown.map((epic: EpicBreakdown) => 
-          `### ${epic.name}
-- Stories: ${epic.completed}/${epic.total} (${epic.percent}% complete)
-- Points: ${epic.completedPoints}/${epic.totalPoints} (${epic.percentPoints}% complete)`
-        ).join('\n\n');
 
-        slides.push({
-          id: `slide-${slideOrder}`,
-          title: "Sprint Metrics & Epic Progress",
-          content: `# Sprint Metrics
-
-## Quality Metrics
-${Object.entries(state.metrics.qualityChecklist)
-  .map(([key, value]) => `- ${key}: ${value === "yes" ? "✅" : value === "no" ? "❌" : value === "partial" ? "⚠️" : "ℹ️"}`)
-  .join("\n")}
-
-## Epic Progress
-${epicBreakdownContent}
-
-## Overall Progress
-- Story Points: ${state.metrics.completedTotalPoints}/${state.metrics.estimatedPoints} (${Math.round((state.metrics.completedTotalPoints / state.metrics.estimatedPoints) * 100)}%)
-- Quality Score: ${calculateQualityScore(state.metrics.qualityChecklist)}%
-${calculateQualityScore(state.metrics.qualityChecklist) >= 80 
-  ? "✅ Sprint quality meets standards" 
-  : "❌ Sprint quality needs attention"}`,
-          type: "metrics",
-          order: slideOrder,
-        });
-        slideOrder++
-      }
 
       // Demo Stories slides
       if (hasDemoStories && state.summaries.demoStories) {
@@ -686,7 +654,19 @@ ${safeContentToString(story.releaseNotes)}` : ''}`
           allIssues: state.issues,
           upcomingIssues: state.upcomingIssues || [],
           sprintMetrics: state.metrics,
-          options: { format: 'executive', quality: 'high' }
+          options: { format: 'executive', quality: 'high' },
+          additionalData: {
+            selectedProject: state.selectedProject,
+            selectedBoard: state.selectedBoard,
+            selectedSprint: state.selectedSprint,
+            upcomingSprint: state.upcomingSprint,
+            sprintComparison: state.sprintComparison,
+            sprintTrends: state.sprintTrends,
+            summaries: state.summaries,
+            corporateSlides: state.corporateSlides,
+            additionalSlides: state.additionalSlides,
+            quarterlyPlanSlide: state.quarterlyPlanSlide
+          }
         }),
       })
 

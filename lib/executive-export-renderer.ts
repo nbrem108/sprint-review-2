@@ -473,6 +473,76 @@ export class ExecutiveExportRenderer implements ExportRenderer {
             border-top: 1px solid #e5e7eb;
         }
 
+        .ai-summary {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-content {
+            color: #0c4a6e;
+            line-height: 1.7;
+        }
+
+        .summary-content h1,
+        .summary-content h2,
+        .summary-content h3,
+        .summary-content h4,
+        .summary-content h5,
+        .summary-content h6 {
+            color: #1e3a8a;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .summary-content h1 { font-size: 1.5rem; }
+        .summary-content h2 { font-size: 1.3rem; }
+        .summary-content h3 { font-size: 1.1rem; }
+
+        .summary-content p {
+            margin-bottom: 1rem;
+        }
+
+        .summary-content strong {
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        .summary-content em {
+            color: #0c4a6e;
+            font-style: italic;
+        }
+
+        .summary-content code {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .summary-content blockquote {
+            border-left: 4px solid #0ea5e9;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+            color: #0c4a6e;
+        }
+
+        .summary-content ul,
+        .summary-content ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .summary-content li {
+            margin-bottom: 0.5rem;
+        }
+
         @media (max-width: 768px) {
             .header h1 { font-size: 2rem; }
             .metrics-grid { grid-template-columns: 1fr; }
@@ -590,6 +660,30 @@ export class ExecutiveExportRenderer implements ExportRenderer {
                     </ul>
                 </div>
             </div>
+
+            <!-- AI-Generated Sprint Summary -->
+            ${additionalData?.summaries?.currentSprint ? `
+            <div class="section">
+                <h2>AI-Generated Sprint Summary</h2>
+                <div class="ai-summary">
+                    <div class="summary-content">
+                        ${this.renderMarkdownToHTML(additionalData.summaries.currentSprint)}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- AI-Generated Upcoming Sprint Summary -->
+            ${additionalData?.summaries?.upcomingSprint ? `
+            <div class="section">
+                <h2>Upcoming Sprint Planning</h2>
+                <div class="ai-summary">
+                    <div class="summary-content">
+                        ${this.renderMarkdownToHTML(additionalData.summaries.upcomingSprint)}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
         </div>
 
         <div class="footer">
@@ -915,5 +1009,29 @@ export class ExecutiveExportRenderer implements ExportRenderer {
     if (onProgress) {
       onProgress(progress);
     }
+  }
+
+  private renderMarkdownToHTML(markdown: string): string {
+    if (!markdown) {
+      return '';
+    }
+
+    // Simple markdown to HTML conversion for demonstration
+    // In a real application, you'd use a proper markdown-to-HTML library
+    const html = markdown
+      .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+      .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+      .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+      .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+      .replace(/\*\*(.*)\*\*/gm, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gm, '<em>$1</em>')
+      .replace(/`(.*)`/gm, '<code>$1</code>')
+      .replace(/\n\n/gm, '</p><p>')
+      .replace(/\n/gm, '<br>')
+      .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>');
+
+    return html;
   }
 } 

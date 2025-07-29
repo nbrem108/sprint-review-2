@@ -1,10 +1,10 @@
-# Release Notes - v1.0.0
+# Release Notes - v1.0.1
 
-**Released:** December 2024  
-**Version:** 1.0.0  
-**Release Type:** Major Release (First Official Release)
+**Released:** July 2025 
+**Version:** 1.0.1  
+**Release Type:** Minor Release (Performance & Stability Update)
 
-## 🎉 Welcome to Sprint Review Generator v1.0.0!
+## 🚀 Sprint Review Generator v1.0.1 - Performance & Stability Update
 
 This is the first official release of the Sprint Review Generator - a comprehensive tool designed to streamline the creation of professional sprint review presentations. Built specifically for agile teams, this application transforms raw sprint data into polished, executive-ready presentations with AI-powered insights.
 
@@ -226,7 +226,7 @@ This is the first official release of the Sprint Review Generator - a comprehens
 
 ## 🎊 Release Celebration
 
-This v1.0.0 release represents a significant milestone in the Sprint Review Generator project. From initial concept to production-ready application, this tool has been designed to transform how agile teams communicate their progress and achievements.
+This v1.0.1 release builds upon the solid foundation of v1.0.0 with significant performance improvements and stability enhancements. From initial concept to production-ready application, this tool has been designed to transform how agile teams communicate their progress and achievements.
 
 **Thank you to all users, contributors, and stakeholders who have supported this project from the beginning. Your feedback, testing, and enthusiasm have been invaluable in creating a tool that truly serves the agile community.**
 
